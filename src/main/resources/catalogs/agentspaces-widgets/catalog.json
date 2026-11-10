@@ -1,0 +1,13 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "catalogId": "agentspaces-widgets",
+  "title": "AgentSpaces widgets catalog",
+  "description": "The raw widgets of an application over a group's entries (https://badmonkey.ai/agentspaces/a2ui/v1/). Each component reads a list from the surface's data model and writes an entry back through the host's callbacks, with no dependency on a platform record; the A2UI basic catalog is assumed beside it.",
+  "version": "1",
+  "components": {
+    "ChatInput": { "description": "a thread per key as chat bubbles, replies, attachments, suggested questions", "element": "agentspaces-chat-input", "reads": "/conversations", "entry": "https://badmonkey.ai/agentspaces/a2ui/v1/ChatMessage", "writes": "ChatMessage", "properties": { "key": { "type": "string", "description": "the conversation key shown; empty for every key" }, "agent": { "type": "string", "description": "the agent that answers, named over the thread" }, "placeholder": { "type": "string", "description": "the hint in the empty message box" }, "suggestions": { "type": "array", "items": { "type": "string" }, "description": "questions offered as chips under the thread; a tap sends the question as a line" } } },
+    "FileShare": { "description": "upload to the content swarm, list, download, share", "element": "agentspaces-file-share", "reads": "/files", "entry": "https://badmonkey.ai/agentspaces/a2ui/v1/SharedFile", "writes": "an upload", "properties": {} },
+    "ApprovalCard": { "description": "the electorate's ballot over the vote capability", "element": "agentspaces-approval-card", "reads": "/approvals", "entry": "", "writes": "a ballot action", "properties": {} },
+    "TimelineStrip": { "description": "the request timeline", "element": "agentspaces-timeline-strip", "reads": "/events", "entry": "", "writes": "nothing", "properties": { "events": { "type": "array", "description": "the events shown when the data model has none" } } }
+  }
+}

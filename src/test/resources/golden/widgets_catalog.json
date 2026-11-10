@@ -1,0 +1,66 @@
+{
+  "$schema" : "https://json-schema.org/draft/2020-12/schema",
+  "catalogId" : "agentspaces-widgets",
+  "components" : {
+    "ApprovalCard" : {
+      "description" : "the electorate's ballot over the vote capability",
+      "element" : "agentspaces-approval-card",
+      "entry" : "",
+      "properties" : { },
+      "reads" : "/approvals",
+      "writes" : "a ballot action"
+    },
+    "ChatInput" : {
+      "description" : "a thread per key as chat bubbles, replies, attachments, suggested questions",
+      "element" : "agentspaces-chat-input",
+      "entry" : "https://badmonkey.ai/agentspaces/a2ui/v1/ChatMessage",
+      "properties" : {
+        "agent" : {
+          "description" : "the agent that answers, named over the thread",
+          "type" : "string"
+        },
+        "key" : {
+          "description" : "the conversation key shown; empty for every key",
+          "type" : "string"
+        },
+        "placeholder" : {
+          "description" : "the hint in the empty message box",
+          "type" : "string"
+        },
+        "suggestions" : {
+          "description" : "questions offered as chips under the thread; a tap sends the question as a line",
+          "items" : {
+            "type" : "string"
+          },
+          "type" : "array"
+        }
+      },
+      "reads" : "/conversations",
+      "writes" : "ChatMessage"
+    },
+    "FileShare" : {
+      "description" : "upload to the content swarm, list, download, share",
+      "element" : "agentspaces-file-share",
+      "entry" : "https://badmonkey.ai/agentspaces/a2ui/v1/SharedFile",
+      "properties" : { },
+      "reads" : "/files",
+      "writes" : "an upload"
+    },
+    "TimelineStrip" : {
+      "description" : "the request timeline",
+      "element" : "agentspaces-timeline-strip",
+      "entry" : "",
+      "properties" : {
+        "events" : {
+          "description" : "the events shown when the data model has none",
+          "type" : "array"
+        }
+      },
+      "reads" : "/events",
+      "writes" : "nothing"
+    }
+  },
+  "description" : "The raw widgets of an application over a group's entries (https://badmonkey.ai/agentspaces/a2ui/v1/). Each component reads a list from the surface's data model and writes an entry back through the host's callbacks, with no dependency on a platform record; the A2UI basic catalog is assumed beside it.",
+  "title" : "AgentSpaces widgets catalog",
+  "version" : "1"
+}
