@@ -137,7 +137,8 @@ The quick start's first step is the whole build for a Spring Boot host: `ai.badm
 1. **[The AgentSpaces developer guide](https://www.badmonkey.ai/agentspaces/developer-guide.html)**: groups, spaces, leases, and the hosts that give an agent its `Space`.
 2. **[The A2UI specification](https://a2ui.org)**: the envelopes and the basic catalog this library writes.
 3. **[The example](src/test/java/ai/badmonkey/agentspaces/a2ui/SurfaceDeskExampleTest.java)**: two peers over TCP, a card drawn and answered, and the same envelopes drawn again as a template.
-4. **[The documents](docs/README.md)**: everything this README leaves out, one topic per document, each with the reader it is written for.
+4. **[@agentspaces/a2ui-react](https://github.com/badmonkeyai/agentspaces-a2ui-react)**: the open React renderer of both catalogs, on npm.
+5. **[The documents](docs/README.md)**: everything this README leaves out, one topic per document, each with the reader it is written for.
 
 ## License
 

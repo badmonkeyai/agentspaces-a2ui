@@ -68,7 +68,7 @@ Paths stay inside the app (no `..`, no hidden file, nothing that needs escaping)
   - **FilePreview** draws one file by its media type: text and Markdown as text, CSV as a table of its first rows, PNG and JPEG as an image, PDF in a sandboxed frame, HTML and SVG as their text. Above `maxBytes` it offers Download.
 - **The look-and-feel schema**: the tokens a published application draws with (colours, type, spacing, density, radius, shadow), light and dark modes, and a texture for the colour-blind and print case. Tokens only: no URL, no markup, no stylesheet.
 
-Both catalogs are open, and a host adds its own catalogs beside them. `VizCatalog.catalog()`, `WidgetsCatalog.catalog()`, and `VizCatalog.lookAndFeelSchema()` read the documents from the jar.
+Both catalogs are open, and a host adds its own catalogs beside them. `VizCatalog.catalog()`, `WidgetsCatalog.catalog()`, and `VizCatalog.lookAndFeelSchema()` read the documents from the jar. The open React renderer [`@agentspaces/a2ui-react`](https://github.com/badmonkeyai/agentspaces-a2ui-react) draws both catalogs and the basic catalog in a browser; its build regenerates its types from these documents and the golden surfaces, and fails when they drift.
 
 ## The example
 
