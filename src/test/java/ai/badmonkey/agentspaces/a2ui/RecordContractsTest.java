@@ -17,6 +17,11 @@
 
 package ai.badmonkey.agentspaces.a2ui;
 
+import ai.badmonkey.agentspaces.a2ui.records.ChatMessage;
+import ai.badmonkey.agentspaces.a2ui.records.ChatProgress;
+import ai.badmonkey.agentspaces.a2ui.records.SharedFile;
+import ai.badmonkey.agentspaces.a2ui.records.TaskStates;
+import ai.badmonkey.agentspaces.a2ui.records.WorkingOn;
 import org.junit.jupiter.api.Test;
 
 import java.lang.reflect.Constructor;
@@ -36,11 +41,12 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.fail;
 
 /**
- * The null policy of the A2UI records: a surface and a surface action refuse a null app and surface id (the feed's
- * sweep sorts by the surface id and the bridge's write set tags by both) and default the instant to the clock; a
+ * The null policy of the A2UI records: a surface and a surface action refuse a null app and surface id (hosts
+ * sort surfaces by the surface id and tag actions by both) and default the instant to the clock; a
  * publish refuses a null app and instant and defaults the rest. The test scans the package's compiled classes for
  * records, so a new record without a row here fails: a policy change is a test change. R refuses naming the component,
- * D yields the default, T keeps the null.
+ * D yields the default, T keeps the null. The open records of {@code a2ui.records} (spiral 6) join the scan, a version
+ * 1 and a version 2 row each where the version decides a policy.
  */
 class RecordContractsTest {
 
@@ -73,8 +79,26 @@ class RecordContractsTest {
                 of(PublishStatic.class, Map.of("root", StaticAppTest.ROOT, "entry", "index.html", "files", Map.of("index.html", "text/html"), "signOn", "none"),
                         "app", R, "from", "", "title", new SameAs("app"), "root", R, "entry", "index.html", "files", R, "signOn", "idp", "host", "", "at", R),
                 of(StaticBundle.class, Map.of("files", List.of(new StaticFile("index.html", new byte[1]))), "files", R),
-                of(StaticFile.class, Map.of("path", "index.html"), "path", R, "bytes", R));
-        assertThat(table.stream().map(Row::type).toList()).as("every record of the package has a row").containsExactlyInAnyOrderElementsOf(recordsOf(Surface.class));
+                of(StaticFile.class, Map.of("path", "index.html"), "path", R, "bytes", R),
+                // spiral 6 S6-U-17: the open records; a v1 value keeps its v2 fields null, a v2 one takes their defaults
+                of(ChatMessage.class, nullable("format", null, "cites", null), "id", R, "key", R, "from", new ChatMessage.From("person", "", ""), "text", "", "attachments", List.of(),
+                        "inReplyTo", "", "at", T, "format", T, "cites", T),
+                of(ChatMessage.class, Map.of("schemaVersion", 2, "format", ChatMessage.PLAIN), "id", R, "key", R, "from", new ChatMessage.From("person", "", ""), "text", "",
+                        "attachments", List.of(), "inReplyTo", "", "at", T, "format", ChatMessage.PLAIN, "cites", List.of()),
+                of(ChatMessage.From.class, Map.of("kind", "agent"), "kind", "person", "name", "", "peer", ""),
+                of(ChatMessage.Cite.class, Map.of(), "file", R, "path", "", "name", ""),
+                of(SharedFile.class, nullable("path", null, "replaces", null), "id", R, "name", R, "mediaType", "application/octet-stream", "root", "", "sha256", "", "by", "",
+                        "sharedWith", List.of(), "at", NOW, "path", T, "replaces", T),
+                of(SharedFile.class, Map.of("schemaVersion", 2), "id", R, "name", R, "mediaType", "application/octet-stream", "root", "", "sha256", "",
+                        "by", "", "sharedWith", List.of(), "at", NOW, "path", "", "replaces", ""),
+                of(WorkingOn.class, Map.of("state", TaskStates.WORKING), "id", R, "agent", R, "key", "", "files", List.of(), "task", "", "state", TaskStates.WORKING,
+                        "since", R),
+                of(ChatProgress.class, Map.of("state", TaskStates.WORKING), "id", R, "key", R, "inReplyTo", R, "agent", R, "state", TaskStates.SUBMITTED,
+                        "steps", List.of(), "at", R),
+                of(ChatProgress.Step.class, Map.of("kind", ChatProgress.Step.READ), "label", "", "kind", R, "ref", "", "at", R));
+        List<Class<?>> records = new ArrayList<>(recordsOf(Surface.class));
+        records.addAll(recordsOf(ChatMessage.class));
+        assertThat(table.stream().map(Row::type).distinct().toList()).as("every record of the two packages has a row").containsExactlyInAnyOrderElementsOf(records);
         for (Row row : table) {
             check(row);
         }
@@ -124,6 +148,15 @@ class RecordContractsTest {
         }
     }
 
+    /** Samples that may hold a null (a version 1 value's version 2 fields). */
+    private static Map<String, Object> nullable(Object... pairs) {
+        Map<String, Object> out = new java.util.HashMap<>();
+        for (int i = 0; i < pairs.length; i += 2) {
+            out.put((String) pairs[i], pairs[i + 1]);
+        }
+        return out;
+    }
+
     private static Object construct(Class<?> type, RecordComponent[] components, Object[] args) throws Exception {
         Class<?>[] types = new Class<?>[components.length];
         for (int i = 0; i < components.length; i++) {
@@ -155,6 +188,9 @@ class RecordContractsTest {
         }
         if (type == Map.class) {
             return Map.of();
+        }
+        if (type == ChatMessage.From.class) {
+            return new ChatMessage.From("person", "ada", "");
         }
         if (type == byte[].class) {
             return new byte[1];

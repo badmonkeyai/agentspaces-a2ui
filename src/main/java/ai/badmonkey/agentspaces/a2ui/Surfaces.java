@@ -45,7 +45,7 @@ public final class Surfaces {
     private final InstantSource clock;
     /**
      * How long an update of one path of the data model stays in the space when the pen was given no other term: a
-     * minute, since the feed keeps the newest per path for a page that joins and the space is replicated by every member.
+     * minute, since a host keeps the newest per path for a page that joins and the space is replicated by every member.
      */
     public static final Duration DEFAULT_UPDATE_LEASE = Duration.ofMinutes(1);
     private final Duration lease;
@@ -66,7 +66,7 @@ public final class Surfaces {
      * @param updateLease how long an update of one path of the data model stays: short, since a stream that updates a
      *                    path every second must not leave an entry for every second in a space every member replicates
      *                    (a map whose positions moved every second once drove three members to a full core each); a
-     *                    renderer joining late takes the whole model and the updates still alive, the feed keeps the
+     *                    renderer joining late takes the whole model and the updates still alive, and a host keeps the
      *                    newest per path
      */
     public Surfaces(Space views, String app, InstantSource clock, Duration lease, Duration updateLease) {
@@ -331,6 +331,15 @@ public final class Surfaces {
         return m;
     }
 
+    /** A window with buttons in its header: each from {@link #titleAction}. */
+    public static Map<String, Object> window(String id, String title, String child, String placement, List<Map<String, Object>> actions) {
+        Map<String, Object> m = window(id, title, child, placement);
+        if (actions != null && !actions.isEmpty()) {
+            m.put("actions", List.copyOf(actions));
+        }
+        return m;
+    }
+
     /** A status box: the status word with its icon, a title, the text or a path to it. */
     public static Map<String, Object> notice(String id, String status, String title, String text, String dismissAction) {
         Map<String, Object> m = viz(id, "Notice");
@@ -357,6 +366,167 @@ public final class Surfaces {
         return m;
     }
 
+    /** A toolbar whose overflow is a {@link #menu} by id. */
+    public static Map<String, Object> toolbar(String id, String title, List<Map<String, Object>> actions, String menu) {
+        Map<String, Object> m = toolbar(id, title, actions);
+        if (menu != null && !menu.isBlank()) {
+            m.put("menu", menu);
+        }
+        return m;
+    }
+
+    // ---- the frame of a page: its title bar, its menus and its panel splits
+
+    /**
+     * The page's one bar: a title (a literal, or {@code Map.of("path", ...)}), a subtitle, an icon, a status
+     * from {@link #titleStatus}, buttons from {@link #titleAction}, and the id of a {@link #menu} drawn as its overflow;
+     * a blank or empty argument is left out.
+     */
+    public static Map<String, Object> titleBar(String id, Object title, String subtitle, String icon, Map<String, Object> status,
+                                               List<Map<String, Object>> actions, String menu) {
+        Map<String, Object> m = viz(id, "TitleBar");
+        m.put("title", title);
+        putText(m, "subtitle", subtitle);
+        putText(m, "icon", icon);
+        if (status != null && !status.isEmpty()) {
+            m.put("status", status);
+        }
+        if (actions != null && !actions.isEmpty()) {
+            m.put("actions", List.copyOf(actions));
+        }
+        putText(m, "menu", menu);
+        return m;
+    }
+
+    /** A title bar's status: the path of the WorkingOn rows, and the words for working and for idle. */
+    public static Map<String, Object> titleStatus(String from, String working, String idle) {
+        Map<String, Object> labels = new LinkedHashMap<>();
+        putText(labels, "working", working);
+        putText(labels, "idle", idle);
+        Map<String, Object> m = new LinkedHashMap<>();
+        m.put("from", from);
+        if (!labels.isEmpty()) {
+            m.put("labels", labels);
+        }
+        return m;
+    }
+
+    /** A button in a title bar's or a window's header: its id, its words, an icon name (blank for none), and the action it dispatches. */
+    public static Map<String, Object> titleAction(String id, String label, String icon, String actionName) {
+        Map<String, Object> m = new LinkedHashMap<>();
+        m.put("id", id);
+        m.put("label", label);
+        putText(m, "icon", icon);
+        m.put("action", Map.of("name", actionName));
+        return m;
+    }
+
+    /** A menu behind a {@link #trigger}, over items from {@link #menuItem} and {@link #submenu}. */
+    public static Map<String, Object> menu(String id, Map<String, Object> trigger, List<Map<String, Object>> items) {
+        Map<String, Object> m = viz(id, "Menu");
+        m.put("trigger", trigger);
+        m.put("items", List.copyOf(items));
+        return m;
+    }
+
+    /** A menu whose items the data model holds at {@code itemsPath}, such as a context menu an agent fills per row. */
+    public static Map<String, Object> menu(String id, Map<String, Object> trigger, String itemsPath) {
+        Map<String, Object> m = viz(id, "Menu");
+        m.put("trigger", trigger);
+        m.put("items", itemsPath);
+        return m;
+    }
+
+    /** What opens a menu: {@code button}, {@code overflow}, or {@code context}, and its words. */
+    public static Map<String, Object> trigger(String kind, String label) {
+        Map<String, Object> m = new LinkedHashMap<>();
+        m.put("kind", kind);
+        putText(m, "label", label);
+        return m;
+    }
+
+    /** A menu item that dispatches {@code actionName}. */
+    public static Map<String, Object> menuItem(String id, String label, String actionName) {
+        return menuItem(id, label, actionName, Map.of());
+    }
+
+    /** A menu item with {@code more} of {@code shortcut}, {@code group}, {@code disabled}, {@code checked}, or an action {@code context}. */
+    public static Map<String, Object> menuItem(String id, String label, String actionName, Map<String, Object> more) {
+        Map<String, Object> m = new LinkedHashMap<>();
+        m.put("id", id);
+        m.put("label", label);
+        Map<String, Object> action = new LinkedHashMap<>();
+        action.put("name", actionName);
+        more.forEach((k, v) -> {
+            if ("context".equals(k)) {
+                action.put("context", v);
+            } else if (v != null && !(v instanceof String str && str.isBlank())) {
+                m.put(k, v);
+            }
+        });
+        m.put("action", action);
+        return m;
+    }
+
+    /** A submenu: an item whose items open beside it, one level deep. */
+    public static Map<String, Object> submenu(String id, String label, List<Map<String, Object>> items) {
+        for (Map<String, Object> item : items) {
+            if (item.containsKey("items")) {
+                throw new IllegalArgumentException("a menu has one level of submenu: " + item.get("id") + " holds items of its own");
+            }
+        }
+        Map<String, Object> m = new LinkedHashMap<>();
+        m.put("id", id);
+        m.put("label", label);
+        m.put("items", List.copyOf(items));
+        return m;
+    }
+
+    /**
+     * Two or three panes from {@link #pane}, side by side ({@code horizontal}) or one over another; the
+     * browser keeps the sizes under {@code persist} (blank keeps none), and the panes stack below {@code stackBelow}
+     * pixels (0 never).
+     */
+    public static Map<String, Object> split(String id, String orientation, String persist, int stackBelow, List<Map<String, Object>> panes) {
+        if (panes.size() < 2 || panes.size() > 3) {
+            throw new IllegalArgumentException("a split has two or three panes: " + panes.size());
+        }
+        String o = orientation == null || orientation.isBlank() ? "horizontal" : orientation;
+        if (!o.equals("horizontal") && !o.equals("vertical")) {
+            throw new IllegalArgumentException("a split's orientation is horizontal or vertical: " + orientation);
+        }
+        Map<String, Object> m = viz(id, "Split");
+        m.put("orientation", o);
+        putText(m, "persist", persist);
+        if (stackBelow > 0) {
+            m.put("stackBelow", stackBelow);
+        }
+        m.put("panes", List.copyOf(panes));
+        return m;
+    }
+
+    /** One pane of a split: its id, its child's id (blank for an empty pane), its share, its minimum in pixels, whether it collapses, and its name. */
+    public static Map<String, Object> pane(String id, String child, double size, int min, boolean collapsible, String label) {
+        Map<String, Object> m = new LinkedHashMap<>();
+        m.put("id", id);
+        putText(m, "child", child);
+        m.put("size", size);
+        if (min > 0) {
+            m.put("min", min);
+        }
+        if (collapsible) {
+            m.put("collapsible", true);
+        }
+        putText(m, "label", label);
+        return m;
+    }
+
+    private static void putText(Map<String, Object> m, String key, String value) {
+        if (value != null && !value.isBlank()) {
+            m.put(key, value);
+        }
+    }
+
     /** Facts as pairs: the items ({@code {label, value}}, the value a literal or a path), or every field of the object at {@code path}. */
     public static Map<String, Object> keyValue(String id, String title, List<Map<String, Object>> items, String path) {
         Map<String, Object> m = viz(id, "KeyValue");
@@ -376,6 +546,48 @@ public final class Surfaces {
     public static Map<String, Object> prose(String id, String text) {
         Map<String, Object> m = viz(id, "Prose");
         m.put("text", text);
+        return m;
+    }
+
+    /**
+     * The one agentic chat of the {@code agentspaces-widgets} catalog: the agent named over the
+     * thread (blank for none), the thread {@code key}, and {@code options} of the component's other properties
+     * ({@code reads}, {@code progress}, {@code files}, {@code suggestions}, {@code placeholder}, {@code attach},
+     * {@code format}, {@code controls}, {@code max}, {@code preview}, {@code writeAction}), each checked against the
+     * catalog, so a word it does not take (a control of {@code delete}) fails here and not at the feed.
+     */
+    public static Map<String, Object> chat(String id, String agent, String key, Map<String, Object> options) {
+        WidgetsCatalog.check("Chat", options);
+        Map<String, Object> m = viz(id, "Chat");
+        putText(m, "agent", agent);
+        m.put("key", key == null ? "" : key);
+        m.putAll(new java.util.TreeMap<>(options));
+        return m;
+    }
+
+    /**
+     * A tree of files over the SharedFile rows at {@code reads}, with {@code options} of
+     * {@code working}, {@code label}, {@code upload}, {@code preview}, {@code chat}, {@code actions}, {@code badges},
+     * {@code agents}, {@code flat}, {@code accept} and {@code maxBytes}, each checked against the catalog.
+     */
+    public static Map<String, Object> fileTree(String id, String reads, Map<String, Object> options) {
+        WidgetsCatalog.check("FileTree", options);
+        Map<String, Object> m = viz(id, "FileTree");
+        m.put("reads", reads == null || reads.isBlank() ? "/files" : reads);
+        m.putAll(new java.util.TreeMap<>(options));
+        return m;
+    }
+
+    /**
+     * One file by its media type: {@code file} a SharedFile id, or {@code Map.of("path", ...)}
+     * where a tree puts the person's choice, and {@code options} of {@code files}, {@code maxBytes} (at most 16 MiB),
+     * {@code csvRows} and {@code kinds}, each checked against the catalog.
+     */
+    public static Map<String, Object> filePreview(String id, Object file, Map<String, Object> options) {
+        WidgetsCatalog.check("FilePreview", options);
+        Map<String, Object> m = viz(id, "FilePreview");
+        m.put("file", file);
+        m.putAll(new java.util.TreeMap<>(options));
         return m;
     }
 

@@ -22,8 +22,8 @@ import java.util.Map;
 import java.util.Objects;
 
 /**
- * One A2UI envelope of a surface (agentspaces-a2ui): the app, the surface id, the catalog id, the sequence number the
- * feed replays in, the message (one of createSurface, updateComponents, updateDataModel, deleteSurface, with its
+ * One A2UI envelope of a surface (agentspaces-a2ui): the app, the surface id, the catalog id, the sequence number a
+ * renderer replays in, the message (one of createSurface, updateComponents, updateDataModel, deleteSurface, with its
  * {@code version}), and the protocol version. Written by a surface agent into the group's {@code views} space. Version 1.
  */
 public record Surface(int schemaVersion, String app, String surfaceId, String catalogId, long seq, Map<String, Object> message, String version, Instant at) {
@@ -34,8 +34,8 @@ public record Surface(int schemaVersion, String app, String surfaceId, String ca
     public static final String BASIC_CATALOG = "https://a2ui.org/specification/v0_9/catalogs/basic/catalog.json";
 
     public Surface {
-        // the app and the surface id are dereferenced by the feed's sweep (one null would end the
-        // whole sweep's sort), so a null is refused; the instant defaults
+        // the app and the surface id are dereferenced by the hosts that sort surfaces by them (one null
+        // would end a whole sort), so a null is refused; the instant defaults
         Objects.requireNonNull(app, "app");
         Objects.requireNonNull(surfaceId, "surfaceId");
         at = at == null ? Instant.now() : at;

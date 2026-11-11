@@ -732,5 +732,1292 @@
     "expectText" : [ "Open claims", "42", "claims" ],
     "name" : "Stat",
     "surfaceId" : "stat"
+  }, {
+    "catalogId" : "agentspaces-viz",
+    "envelopes" : [ {
+      "createSurface" : {
+        "catalogId" : "agentspaces-viz",
+        "surfaceId" : "titlebar"
+      },
+      "version" : "v0.9.1"
+    }, {
+      "updateComponents" : {
+        "components" : [ {
+          "children" : [ "bar" ],
+          "component" : "Column",
+          "id" : "root"
+        }, {
+          "actions" : [ {
+            "action" : {
+              "name" : "share"
+            },
+            "icon" : "share",
+            "id" : "share",
+            "label" : "Share"
+          } ],
+          "component" : "TitleBar",
+          "icon" : "briefcase",
+          "id" : "bar",
+          "menu" : "bar-menu",
+          "status" : {
+            "from" : "/working",
+            "labels" : {
+              "idle" : "Ready",
+              "working" : "Agent working"
+            }
+          },
+          "subtitle" : "Claims desk",
+          "title" : {
+            "path" : "/app/title"
+          }
+        }, {
+          "component" : "Menu",
+          "id" : "bar-menu",
+          "items" : [ {
+            "action" : {
+              "name" : "chat.new"
+            },
+            "id" : "new-chat",
+            "label" : "New chat"
+          }, {
+            "action" : {
+              "name" : "help"
+            },
+            "id" : "help",
+            "label" : "Help"
+          } ],
+          "trigger" : {
+            "kind" : "overflow",
+            "label" : "More"
+          }
+        } ],
+        "surfaceId" : "titlebar"
+      },
+      "version" : "v0.9.1"
+    }, {
+      "updateDataModel" : {
+        "path" : "/",
+        "surfaceId" : "titlebar",
+        "value" : {
+          "app" : {
+            "title" : "Workbench"
+          },
+          "working" : [ {
+            "agent" : "workbench",
+            "files" : [ "data/q3-expenses.csv" ],
+            "id" : "working-workbench-main",
+            "key" : "main",
+            "since" : "2026-11-10T09:00:00Z",
+            "state" : "working",
+            "task" : "reading q3-expenses.csv"
+          } ]
+        }
+      },
+      "version" : "v0.9.1"
+    } ],
+    "expectText" : [ "Workbench", "Claims desk", "Agent working", "Share", "More" ],
+    "name" : "TitleBar",
+    "state" : "full",
+    "surfaceId" : "titlebar"
+  }, {
+    "catalogId" : "agentspaces-viz",
+    "envelopes" : [ {
+      "createSurface" : {
+        "catalogId" : "agentspaces-viz",
+        "surfaceId" : "titlebar-empty"
+      },
+      "version" : "v0.9.1"
+    }, {
+      "updateComponents" : {
+        "components" : [ {
+          "children" : [ "bar" ],
+          "component" : "Column",
+          "id" : "root"
+        }, {
+          "component" : "TitleBar",
+          "id" : "bar",
+          "title" : "Workbench"
+        } ],
+        "surfaceId" : "titlebar-empty"
+      },
+      "version" : "v0.9.1"
+    } ],
+    "expectText" : [ "Workbench" ],
+    "name" : "TitleBar",
+    "state" : "empty",
+    "surfaceId" : "titlebar-empty"
+  }, {
+    "catalogId" : "agentspaces-viz",
+    "envelopes" : [ {
+      "createSurface" : {
+        "catalogId" : "agentspaces-viz",
+        "surfaceId" : "titlebar-loading"
+      },
+      "version" : "v0.9.1"
+    }, {
+      "updateComponents" : {
+        "components" : [ {
+          "children" : [ "bar" ],
+          "component" : "Column",
+          "id" : "root"
+        }, {
+          "component" : "TitleBar",
+          "id" : "bar",
+          "status" : {
+            "from" : "/working",
+            "labels" : {
+              "idle" : "Ready",
+              "working" : "Agent working"
+            }
+          },
+          "title" : {
+            "path" : "/app/title"
+          }
+        } ],
+        "surfaceId" : "titlebar-loading"
+      },
+      "version" : "v0.9.1"
+    } ],
+    "expectText" : [ "Loading" ],
+    "name" : "TitleBar",
+    "state" : "loading",
+    "surfaceId" : "titlebar-loading"
+  }, {
+    "catalogId" : "agentspaces-viz",
+    "envelopes" : [ {
+      "createSurface" : {
+        "catalogId" : "agentspaces-viz",
+        "surfaceId" : "titlebar-error"
+      },
+      "version" : "v0.9.1"
+    }, {
+      "updateComponents" : {
+        "components" : [ {
+          "children" : [ "bar" ],
+          "component" : "Column",
+          "id" : "root"
+        }, {
+          "component" : "TitleBar",
+          "id" : "bar",
+          "status" : {
+            "from" : "/working",
+            "labels" : {
+              "idle" : "Ready",
+              "working" : "Agent working"
+            }
+          },
+          "title" : "Workbench"
+        } ],
+        "surfaceId" : "titlebar-error"
+      },
+      "version" : "v0.9.1"
+    }, {
+      "updateDataModel" : {
+        "path" : "/",
+        "surfaceId" : "titlebar-error",
+        "value" : {
+          "working" : [ {
+            "agent" : "workbench",
+            "files" : [ ],
+            "id" : "working-workbench-main",
+            "key" : "main",
+            "since" : "2026-11-10T09:00:00Z",
+            "state" : "failed",
+            "task" : ""
+          } ]
+        }
+      },
+      "version" : "v0.9.1"
+    } ],
+    "expectText" : [ "Workbench", "The agent stopped" ],
+    "name" : "TitleBar",
+    "state" : "error",
+    "surfaceId" : "titlebar-error"
+  }, {
+    "catalogId" : "agentspaces-viz",
+    "envelopes" : [ {
+      "createSurface" : {
+        "catalogId" : "agentspaces-viz",
+        "surfaceId" : "menu"
+      },
+      "version" : "v0.9.1"
+    }, {
+      "updateComponents" : {
+        "components" : [ {
+          "children" : [ "menu" ],
+          "component" : "Column",
+          "id" : "root"
+        }, {
+          "component" : "Menu",
+          "id" : "menu",
+          "items" : [ {
+            "action" : {
+              "name" : "chat.new"
+            },
+            "id" : "new-chat",
+            "label" : "New chat",
+            "shortcut" : "Ctrl+Shift+O"
+          }, {
+            "action" : {
+              "name" : "view.dark"
+            },
+            "checked" : {
+              "path" : "/view/dark"
+            },
+            "id" : "dark",
+            "label" : "Dark mode"
+          }, {
+            "action" : {
+              "name" : "export"
+            },
+            "disabled" : true,
+            "id" : "export",
+            "label" : "Export"
+          }, {
+            "id" : "share",
+            "items" : [ {
+              "action" : {
+                "name" : "share.link"
+              },
+              "id" : "copy-link",
+              "label" : "Copy link"
+            }, {
+              "action" : {
+                "name" : "share.email"
+              },
+              "id" : "email",
+              "label" : "Email"
+            } ],
+            "label" : "Share"
+          }, {
+            "action" : {
+              "name" : "help"
+            },
+            "group" : "about",
+            "id" : "help",
+            "label" : "Help"
+          } ],
+          "trigger" : {
+            "kind" : "button",
+            "label" : "Actions"
+          }
+        } ],
+        "surfaceId" : "menu"
+      },
+      "version" : "v0.9.1"
+    }, {
+      "updateDataModel" : {
+        "path" : "/",
+        "surfaceId" : "menu",
+        "value" : {
+          "view" : {
+            "dark" : false
+          }
+        }
+      },
+      "version" : "v0.9.1"
+    } ],
+    "expectText" : [ "Actions" ],
+    "name" : "Menu",
+    "state" : "full",
+    "surfaceId" : "menu"
+  }, {
+    "catalogId" : "agentspaces-viz",
+    "envelopes" : [ {
+      "createSurface" : {
+        "catalogId" : "agentspaces-viz",
+        "surfaceId" : "menu-empty"
+      },
+      "version" : "v0.9.1"
+    }, {
+      "updateComponents" : {
+        "components" : [ {
+          "children" : [ "menu" ],
+          "component" : "Column",
+          "id" : "root"
+        }, {
+          "component" : "Menu",
+          "id" : "menu",
+          "items" : [ ],
+          "trigger" : {
+            "kind" : "button",
+            "label" : "Actions"
+          }
+        } ],
+        "surfaceId" : "menu-empty"
+      },
+      "version" : "v0.9.1"
+    } ],
+    "expectText" : [ "Actions", "None" ],
+    "name" : "Menu",
+    "state" : "empty",
+    "surfaceId" : "menu-empty"
+  }, {
+    "catalogId" : "agentspaces-viz",
+    "envelopes" : [ {
+      "createSurface" : {
+        "catalogId" : "agentspaces-viz",
+        "surfaceId" : "menu-loading"
+      },
+      "version" : "v0.9.1"
+    }, {
+      "updateComponents" : {
+        "components" : [ {
+          "children" : [ "menu" ],
+          "component" : "Column",
+          "id" : "root"
+        }, {
+          "component" : "Menu",
+          "id" : "menu",
+          "items" : "/menu",
+          "trigger" : {
+            "kind" : "button",
+            "label" : "Actions"
+          }
+        } ],
+        "surfaceId" : "menu-loading"
+      },
+      "version" : "v0.9.1"
+    } ],
+    "expectText" : [ "Actions", "Loading" ],
+    "name" : "Menu",
+    "state" : "loading",
+    "surfaceId" : "menu-loading"
+  }, {
+    "catalogId" : "agentspaces-viz",
+    "envelopes" : [ {
+      "createSurface" : {
+        "catalogId" : "agentspaces-viz",
+        "surfaceId" : "menu-error"
+      },
+      "version" : "v0.9.1"
+    }, {
+      "updateComponents" : {
+        "components" : [ {
+          "children" : [ "menu" ],
+          "component" : "Column",
+          "id" : "root"
+        }, {
+          "component" : "Menu",
+          "id" : "menu",
+          "items" : "/menu",
+          "trigger" : {
+            "kind" : "button",
+            "label" : "Actions"
+          }
+        } ],
+        "surfaceId" : "menu-error"
+      },
+      "version" : "v0.9.1"
+    }, {
+      "updateDataModel" : {
+        "path" : "/",
+        "surfaceId" : "menu-error",
+        "value" : {
+          "menu" : "not a list"
+        }
+      },
+      "version" : "v0.9.1"
+    } ],
+    "expectText" : [ "Actions", "Unavailable" ],
+    "name" : "Menu",
+    "state" : "error",
+    "surfaceId" : "menu-error"
+  }, {
+    "catalogId" : "agentspaces-viz",
+    "envelopes" : [ {
+      "createSurface" : {
+        "catalogId" : "agentspaces-viz",
+        "surfaceId" : "split"
+      },
+      "version" : "v0.9.1"
+    }, {
+      "updateComponents" : {
+        "components" : [ {
+          "children" : [ "main" ],
+          "component" : "Column",
+          "id" : "root"
+        }, {
+          "component" : "Split",
+          "id" : "main",
+          "orientation" : "horizontal",
+          "panes" : [ {
+            "child" : "files",
+            "collapsible" : true,
+            "id" : "left",
+            "label" : "Files",
+            "min" : 180,
+            "size" : 0.25
+          }, {
+            "child" : "preview",
+            "id" : "mid",
+            "label" : "Preview",
+            "min" : 320,
+            "size" : 0.45
+          }, {
+            "child" : "chat",
+            "collapsible" : true,
+            "id" : "right",
+            "label" : "Chat",
+            "min" : 300,
+            "size" : 0.3
+          } ],
+          "persist" : "workbench-main",
+          "stackBelow" : 720
+        }, {
+          "component" : "Text",
+          "id" : "files",
+          "text" : "notes/summary.md",
+          "variant" : "body"
+        }, {
+          "component" : "Prose",
+          "id" : "preview",
+          "text" : "/note"
+        }, {
+          "component" : "Text",
+          "id" : "chat",
+          "text" : "Ask about a file",
+          "variant" : "body"
+        } ],
+        "surfaceId" : "split"
+      },
+      "version" : "v0.9.1"
+    }, {
+      "updateDataModel" : {
+        "path" : "/",
+        "surfaceId" : "split",
+        "value" : {
+          "note" : "Spend rose **four percent**."
+        }
+      },
+      "version" : "v0.9.1"
+    } ],
+    "expectText" : [ "Files", "Preview", "Chat", "notes/summary.md", "Spend rose", "Ask about a file" ],
+    "name" : "Split",
+    "state" : "full",
+    "surfaceId" : "split"
+  }, {
+    "catalogId" : "agentspaces-viz",
+    "envelopes" : [ {
+      "createSurface" : {
+        "catalogId" : "agentspaces-viz",
+        "surfaceId" : "split-empty"
+      },
+      "version" : "v0.9.1"
+    }, {
+      "updateComponents" : {
+        "components" : [ {
+          "children" : [ "main" ],
+          "component" : "Column",
+          "id" : "root"
+        }, {
+          "component" : "Split",
+          "id" : "main",
+          "orientation" : "horizontal",
+          "panes" : [ {
+            "id" : "left",
+            "label" : "Files",
+            "size" : 0.5
+          }, {
+            "id" : "right",
+            "label" : "Chat",
+            "size" : 0.5
+          } ]
+        } ],
+        "surfaceId" : "split-empty"
+      },
+      "version" : "v0.9.1"
+    } ],
+    "expectText" : [ "Files", "Chat", "Nothing here yet" ],
+    "name" : "Split",
+    "state" : "empty",
+    "surfaceId" : "split-empty"
+  }, {
+    "catalogId" : "agentspaces-viz",
+    "envelopes" : [ {
+      "createSurface" : {
+        "catalogId" : "agentspaces-viz",
+        "surfaceId" : "split-loading"
+      },
+      "version" : "v0.9.1"
+    }, {
+      "updateComponents" : {
+        "components" : [ {
+          "children" : [ "main" ],
+          "component" : "Column",
+          "id" : "root"
+        }, {
+          "component" : "Split",
+          "id" : "main",
+          "orientation" : "vertical",
+          "panes" : [ {
+            "child" : "open",
+            "id" : "top",
+            "label" : "Open",
+            "size" : 0.5
+          }, {
+            "child" : "closed",
+            "id" : "bottom",
+            "label" : "Closed",
+            "size" : 0.5
+          } ]
+        }, {
+          "component" : "Stat",
+          "id" : "open",
+          "label" : "Open claims",
+          "value" : "/open"
+        }, {
+          "component" : "Stat",
+          "id" : "closed",
+          "label" : "Closed claims",
+          "value" : "/closed"
+        } ],
+        "surfaceId" : "split-loading"
+      },
+      "version" : "v0.9.1"
+    } ],
+    "expectText" : [ "Open claims", "Closed claims" ],
+    "name" : "Split",
+    "state" : "loading",
+    "surfaceId" : "split-loading"
+  }, {
+    "catalogId" : "agentspaces-viz",
+    "envelopes" : [ {
+      "createSurface" : {
+        "catalogId" : "agentspaces-viz",
+        "surfaceId" : "split-error"
+      },
+      "version" : "v0.9.1"
+    }, {
+      "updateComponents" : {
+        "components" : [ {
+          "children" : [ "main" ],
+          "component" : "Column",
+          "id" : "root"
+        }, {
+          "component" : "Split",
+          "id" : "main",
+          "orientation" : "horizontal",
+          "panes" : [ {
+            "child" : "gone",
+            "id" : "left",
+            "label" : "Files",
+            "size" : 0.5
+          }, {
+            "id" : "right",
+            "label" : "Chat",
+            "size" : 0.5
+          } ]
+        } ],
+        "surfaceId" : "split-error"
+      },
+      "version" : "v0.9.1"
+    } ],
+    "expectText" : [ "Files", "Chat", "Missing content: gone" ],
+    "name" : "Split",
+    "state" : "error",
+    "surfaceId" : "split-error"
+  }, {
+    "catalogId" : "agentspaces-widgets",
+    "envelopes" : [ {
+      "createSurface" : {
+        "catalogId" : "agentspaces-widgets",
+        "surfaceId" : "chat"
+      },
+      "version" : "v0.9.1"
+    }, {
+      "updateComponents" : {
+        "components" : [ {
+          "children" : [ "chat" ],
+          "component" : "Column",
+          "id" : "root"
+        }, {
+          "agent" : "workbench",
+          "attach" : true,
+          "component" : "Chat",
+          "controls" : [ "copy", "retry", "stop", "feedback" ],
+          "format" : "text/markdown",
+          "id" : "chat",
+          "key" : "main",
+          "suggestions" : [ "Summarise the newest file" ]
+        } ],
+        "surfaceId" : "chat"
+      },
+      "version" : "v0.9.1"
+    }, {
+      "updateDataModel" : {
+        "path" : "/",
+        "surfaceId" : "chat",
+        "value" : {
+          "conversations" : [ {
+            "at" : "2026-11-10T09:00:30Z",
+            "attachments" : [ "f-q3" ],
+            "from" : {
+              "kind" : "person",
+              "name" : "ana",
+              "peer" : ""
+            },
+            "id" : "m-1",
+            "inReplyTo" : "",
+            "key" : "main",
+            "schemaVersion" : 1,
+            "text" : "Where did we overspend in Q3?"
+          }, {
+            "at" : "2026-11-10T09:01:00Z",
+            "attachments" : [ ],
+            "cites" : [ {
+              "file" : "f-q3",
+              "name" : "q3-expenses.csv",
+              "path" : "data/q3-expenses.csv"
+            } ],
+            "format" : "text/markdown",
+            "from" : {
+              "kind" : "agent",
+              "name" : "workbench",
+              "peer" : ""
+            },
+            "id" : "m-2",
+            "inReplyTo" : "m-1",
+            "key" : "main",
+            "schemaVersion" : 2,
+            "text" : "Travel ran **18 percent** over its budget."
+          } ],
+          "files" : [ {
+            "at" : "2026-11-10T09:00:00Z",
+            "by" : "ana",
+            "bytes" : 1840,
+            "id" : "f-q3",
+            "mediaType" : "text/csv",
+            "name" : "q3-expenses.csv",
+            "path" : "data/q3-expenses.csv",
+            "replaces" : "",
+            "root" : "r-q3",
+            "schemaVersion" : 2,
+            "sha256" : "sha256:00",
+            "sharedWith" : [ ]
+          }, {
+            "at" : "2026-11-10T09:01:00Z",
+            "by" : "workbench",
+            "bytes" : 420,
+            "id" : "f-note",
+            "mediaType" : "text/markdown",
+            "name" : "overspend.md",
+            "path" : "notes/overspend.md",
+            "replaces" : "",
+            "root" : "r-note",
+            "schemaVersion" : 2,
+            "sha256" : "sha256:01",
+            "sharedWith" : [ ]
+          } ],
+          "progress" : [ ]
+        }
+      },
+      "version" : "v0.9.1"
+    } ],
+    "expectText" : [ "workbench", "Where did we overspend in Q3?", "Travel ran", "18 percent", "q3-expenses.csv", "Send" ],
+    "name" : "Chat",
+    "state" : "full",
+    "surfaceId" : "chat"
+  }, {
+    "catalogId" : "agentspaces-widgets",
+    "envelopes" : [ {
+      "createSurface" : {
+        "catalogId" : "agentspaces-widgets",
+        "surfaceId" : "chat-empty"
+      },
+      "version" : "v0.9.1"
+    }, {
+      "updateComponents" : {
+        "components" : [ {
+          "children" : [ "chat" ],
+          "component" : "Column",
+          "id" : "root"
+        }, {
+          "agent" : "workbench",
+          "attach" : true,
+          "component" : "Chat",
+          "controls" : [ "copy", "retry", "stop", "feedback" ],
+          "format" : "text/markdown",
+          "id" : "chat",
+          "key" : "main",
+          "suggestions" : [ "Summarise the newest file" ]
+        } ],
+        "surfaceId" : "chat-empty"
+      },
+      "version" : "v0.9.1"
+    } ],
+    "expectText" : [ "workbench", "No message yet", "Summarise the newest file", "Send" ],
+    "name" : "Chat",
+    "state" : "empty",
+    "surfaceId" : "chat-empty"
+  }, {
+    "catalogId" : "agentspaces-widgets",
+    "envelopes" : [ {
+      "createSurface" : {
+        "catalogId" : "agentspaces-widgets",
+        "surfaceId" : "chat-loading"
+      },
+      "version" : "v0.9.1"
+    }, {
+      "updateComponents" : {
+        "components" : [ {
+          "children" : [ "chat" ],
+          "component" : "Column",
+          "id" : "root"
+        }, {
+          "agent" : "workbench",
+          "attach" : true,
+          "component" : "Chat",
+          "controls" : [ "copy", "retry", "stop", "feedback" ],
+          "format" : "text/markdown",
+          "id" : "chat",
+          "key" : "main",
+          "suggestions" : [ "Summarise the newest file" ]
+        } ],
+        "surfaceId" : "chat-loading"
+      },
+      "version" : "v0.9.1"
+    }, {
+      "updateDataModel" : {
+        "path" : "/",
+        "surfaceId" : "chat-loading",
+        "value" : {
+          "conversations" : [ {
+            "at" : "2026-11-10T09:00:30Z",
+            "attachments" : [ "f-q3" ],
+            "from" : {
+              "kind" : "person",
+              "name" : "ana",
+              "peer" : ""
+            },
+            "id" : "m-1",
+            "inReplyTo" : "",
+            "key" : "main",
+            "schemaVersion" : 1,
+            "text" : "Where did we overspend in Q3?"
+          } ],
+          "files" : [ {
+            "at" : "2026-11-10T09:00:00Z",
+            "by" : "ana",
+            "bytes" : 1840,
+            "id" : "f-q3",
+            "mediaType" : "text/csv",
+            "name" : "q3-expenses.csv",
+            "path" : "data/q3-expenses.csv",
+            "replaces" : "",
+            "root" : "r-q3",
+            "schemaVersion" : 2,
+            "sha256" : "sha256:00",
+            "sharedWith" : [ ]
+          } ],
+          "progress" : [ {
+            "agent" : "workbench",
+            "at" : "2026-11-10T09:00:31Z",
+            "id" : "progress-m-1",
+            "inReplyTo" : "m-1",
+            "key" : "main",
+            "schemaVersion" : 1,
+            "state" : "working",
+            "steps" : [ {
+              "at" : "2026-11-10T09:00:31Z",
+              "kind" : "read",
+              "label" : "read q3-expenses.csv",
+              "ref" : "f-q3"
+            } ]
+          } ]
+        }
+      },
+      "version" : "v0.9.1"
+    } ],
+    "expectText" : [ "Where did we overspend in Q3?", "working: read q3-expenses.csv" ],
+    "name" : "Chat",
+    "state" : "loading",
+    "surfaceId" : "chat-loading"
+  }, {
+    "catalogId" : "agentspaces-widgets",
+    "envelopes" : [ {
+      "createSurface" : {
+        "catalogId" : "agentspaces-widgets",
+        "surfaceId" : "chat-error"
+      },
+      "version" : "v0.9.1"
+    }, {
+      "updateComponents" : {
+        "components" : [ {
+          "children" : [ "chat" ],
+          "component" : "Column",
+          "id" : "root"
+        }, {
+          "agent" : "workbench",
+          "attach" : true,
+          "component" : "Chat",
+          "controls" : [ "copy", "retry", "stop", "feedback" ],
+          "format" : "text/markdown",
+          "id" : "chat",
+          "key" : "main",
+          "suggestions" : [ "Summarise the newest file" ]
+        } ],
+        "surfaceId" : "chat-error"
+      },
+      "version" : "v0.9.1"
+    }, {
+      "updateDataModel" : {
+        "path" : "/",
+        "surfaceId" : "chat-error",
+        "value" : {
+          "conversations" : [ {
+            "at" : "2026-11-10T09:00:30Z",
+            "attachments" : [ "f-q3" ],
+            "from" : {
+              "kind" : "person",
+              "name" : "ana",
+              "peer" : ""
+            },
+            "id" : "m-1",
+            "inReplyTo" : "",
+            "key" : "main",
+            "schemaVersion" : 1,
+            "text" : "Where did we overspend in Q3?"
+          } ],
+          "files" : [ {
+            "at" : "2026-11-10T09:00:00Z",
+            "by" : "ana",
+            "bytes" : 1840,
+            "id" : "f-q3",
+            "mediaType" : "text/csv",
+            "name" : "q3-expenses.csv",
+            "path" : "data/q3-expenses.csv",
+            "replaces" : "",
+            "root" : "r-q3",
+            "schemaVersion" : 2,
+            "sha256" : "sha256:00",
+            "sharedWith" : [ ]
+          } ],
+          "progress" : [ {
+            "agent" : "workbench",
+            "at" : "2026-11-10T09:00:31Z",
+            "id" : "progress-m-1",
+            "inReplyTo" : "m-1",
+            "key" : "main",
+            "schemaVersion" : 1,
+            "state" : "failed",
+            "steps" : [ {
+              "at" : "2026-11-10T09:00:31Z",
+              "kind" : "read",
+              "label" : "read q3-expenses.csv",
+              "ref" : "f-q3"
+            } ]
+          } ]
+        }
+      },
+      "version" : "v0.9.1"
+    } ],
+    "expectText" : [ "Where did we overspend in Q3?", "The agent stopped", "Retry" ],
+    "name" : "Chat",
+    "state" : "error",
+    "surfaceId" : "chat-error"
+  }, {
+    "catalogId" : "agentspaces-widgets",
+    "envelopes" : [ {
+      "createSurface" : {
+        "catalogId" : "agentspaces-widgets",
+        "surfaceId" : "filetree"
+      },
+      "version" : "v0.9.1"
+    }, {
+      "updateComponents" : {
+        "components" : [ {
+          "children" : [ "tree" ],
+          "component" : "Column",
+          "id" : "root"
+        }, {
+          "actions" : [ "ask", "download", "share", "rename", "remove" ],
+          "component" : "FileTree",
+          "id" : "tree",
+          "label" : "Files",
+          "reads" : "/files",
+          "upload" : true,
+          "working" : "/working"
+        } ],
+        "surfaceId" : "filetree"
+      },
+      "version" : "v0.9.1"
+    }, {
+      "updateDataModel" : {
+        "path" : "/",
+        "surfaceId" : "filetree",
+        "value" : {
+          "files" : [ {
+            "at" : "2026-11-10T09:00:00Z",
+            "by" : "ana",
+            "bytes" : 1840,
+            "id" : "f-q3",
+            "mediaType" : "text/csv",
+            "name" : "q3-expenses.csv",
+            "path" : "data/q3-expenses.csv",
+            "replaces" : "",
+            "root" : "r-q3",
+            "schemaVersion" : 2,
+            "sha256" : "sha256:00",
+            "sharedWith" : [ ]
+          }, {
+            "at" : "2026-11-10T09:01:00Z",
+            "by" : "workbench",
+            "bytes" : 420,
+            "id" : "f-note",
+            "mediaType" : "text/markdown",
+            "name" : "overspend.md",
+            "path" : "notes/overspend.md",
+            "replaces" : "",
+            "root" : "r-note",
+            "schemaVersion" : 2,
+            "sha256" : "sha256:01",
+            "sharedWith" : [ ]
+          } ],
+          "working" : [ {
+            "agent" : "workbench",
+            "files" : [ "data/q3-expenses.csv" ],
+            "id" : "working-workbench-main",
+            "key" : "main",
+            "schemaVersion" : 1,
+            "since" : "2026-11-10T09:00:31Z",
+            "state" : "working",
+            "task" : "reading q3-expenses.csv"
+          } ]
+        }
+      },
+      "version" : "v0.9.1"
+    } ],
+    "expectText" : [ "Files", "data", "q3-expenses.csv", "notes", "overspend.md", "workbench" ],
+    "name" : "FileTree",
+    "state" : "full",
+    "surfaceId" : "filetree"
+  }, {
+    "catalogId" : "agentspaces-widgets",
+    "envelopes" : [ {
+      "createSurface" : {
+        "catalogId" : "agentspaces-widgets",
+        "surfaceId" : "filetree-empty"
+      },
+      "version" : "v0.9.1"
+    }, {
+      "updateComponents" : {
+        "components" : [ {
+          "children" : [ "tree" ],
+          "component" : "Column",
+          "id" : "root"
+        }, {
+          "actions" : [ "ask", "download", "share", "rename", "remove" ],
+          "component" : "FileTree",
+          "id" : "tree",
+          "label" : "Files",
+          "reads" : "/files",
+          "upload" : true,
+          "working" : "/working"
+        } ],
+        "surfaceId" : "filetree-empty"
+      },
+      "version" : "v0.9.1"
+    }, {
+      "updateDataModel" : {
+        "path" : "/",
+        "surfaceId" : "filetree-empty",
+        "value" : {
+          "files" : [ ]
+        }
+      },
+      "version" : "v0.9.1"
+    } ],
+    "expectText" : [ "Files", "No file yet", "Upload" ],
+    "name" : "FileTree",
+    "state" : "empty",
+    "surfaceId" : "filetree-empty"
+  }, {
+    "catalogId" : "agentspaces-widgets",
+    "envelopes" : [ {
+      "createSurface" : {
+        "catalogId" : "agentspaces-widgets",
+        "surfaceId" : "filetree-loading"
+      },
+      "version" : "v0.9.1"
+    }, {
+      "updateComponents" : {
+        "components" : [ {
+          "children" : [ "tree" ],
+          "component" : "Column",
+          "id" : "root"
+        }, {
+          "actions" : [ "ask", "download", "share", "rename", "remove" ],
+          "component" : "FileTree",
+          "id" : "tree",
+          "label" : "Files",
+          "reads" : "/files",
+          "upload" : true,
+          "working" : "/working"
+        } ],
+        "surfaceId" : "filetree-loading"
+      },
+      "version" : "v0.9.1"
+    } ],
+    "expectText" : [ "Files", "Loading files" ],
+    "name" : "FileTree",
+    "state" : "loading",
+    "surfaceId" : "filetree-loading"
+  }, {
+    "catalogId" : "agentspaces-widgets",
+    "envelopes" : [ {
+      "createSurface" : {
+        "catalogId" : "agentspaces-widgets",
+        "surfaceId" : "filetree-error"
+      },
+      "version" : "v0.9.1"
+    }, {
+      "updateComponents" : {
+        "components" : [ {
+          "children" : [ "tree" ],
+          "component" : "Column",
+          "id" : "root"
+        }, {
+          "actions" : [ "ask", "download", "share", "rename", "remove" ],
+          "component" : "FileTree",
+          "id" : "tree",
+          "label" : "Files",
+          "reads" : "/files",
+          "upload" : true,
+          "working" : "/working"
+        } ],
+        "surfaceId" : "filetree-error"
+      },
+      "version" : "v0.9.1"
+    }, {
+      "updateDataModel" : {
+        "path" : "/",
+        "surfaceId" : "filetree-error",
+        "value" : {
+          "files" : "not a list"
+        }
+      },
+      "version" : "v0.9.1"
+    } ],
+    "expectText" : [ "Files", "Unavailable" ],
+    "name" : "FileTree",
+    "state" : "error",
+    "surfaceId" : "filetree-error"
+  }, {
+    "catalogId" : "agentspaces-widgets",
+    "envelopes" : [ {
+      "createSurface" : {
+        "catalogId" : "agentspaces-widgets",
+        "surfaceId" : "filepreview"
+      },
+      "version" : "v0.9.1"
+    }, {
+      "updateComponents" : {
+        "components" : [ {
+          "children" : [ "preview" ],
+          "component" : "Column",
+          "id" : "root"
+        }, {
+          "component" : "FilePreview",
+          "file" : {
+            "path" : "/selected/file"
+          },
+          "files" : "/files",
+          "id" : "preview"
+        } ],
+        "surfaceId" : "filepreview"
+      },
+      "version" : "v0.9.1"
+    }, {
+      "updateDataModel" : {
+        "path" : "/",
+        "surfaceId" : "filepreview",
+        "value" : {
+          "files" : [ {
+            "at" : "2026-11-10T09:00:00Z",
+            "by" : "ana",
+            "bytes" : 1840,
+            "id" : "f-q3",
+            "mediaType" : "text/csv",
+            "name" : "q3-expenses.csv",
+            "path" : "data/q3-expenses.csv",
+            "replaces" : "",
+            "root" : "r-q3",
+            "schemaVersion" : 2,
+            "sha256" : "sha256:00",
+            "sharedWith" : [ ]
+          }, {
+            "at" : "2026-11-10T09:01:00Z",
+            "by" : "workbench",
+            "bytes" : 420,
+            "id" : "f-note",
+            "mediaType" : "text/markdown",
+            "name" : "overspend.md",
+            "path" : "notes/overspend.md",
+            "replaces" : "",
+            "root" : "r-note",
+            "schemaVersion" : 2,
+            "sha256" : "sha256:01",
+            "sharedWith" : [ ]
+          } ],
+          "selected" : {
+            "file" : "f-q3"
+          }
+        }
+      },
+      "version" : "v0.9.1"
+    } ],
+    "expectText" : [ "q3-expenses.csv", "text/csv", "1.8 KiB", "Download" ],
+    "name" : "FilePreview",
+    "state" : "full",
+    "surfaceId" : "filepreview"
+  }, {
+    "catalogId" : "agentspaces-widgets",
+    "envelopes" : [ {
+      "createSurface" : {
+        "catalogId" : "agentspaces-widgets",
+        "surfaceId" : "filepreview-empty"
+      },
+      "version" : "v0.9.1"
+    }, {
+      "updateComponents" : {
+        "components" : [ {
+          "children" : [ "preview" ],
+          "component" : "Column",
+          "id" : "root"
+        }, {
+          "component" : "FilePreview",
+          "file" : {
+            "path" : "/selected/file"
+          },
+          "files" : "/files",
+          "id" : "preview"
+        } ],
+        "surfaceId" : "filepreview-empty"
+      },
+      "version" : "v0.9.1"
+    }, {
+      "updateDataModel" : {
+        "path" : "/",
+        "surfaceId" : "filepreview-empty",
+        "value" : {
+          "files" : [ {
+            "at" : "2026-11-10T09:00:00Z",
+            "by" : "ana",
+            "bytes" : 1840,
+            "id" : "f-q3",
+            "mediaType" : "text/csv",
+            "name" : "q3-expenses.csv",
+            "path" : "data/q3-expenses.csv",
+            "replaces" : "",
+            "root" : "r-q3",
+            "schemaVersion" : 2,
+            "sha256" : "sha256:00",
+            "sharedWith" : [ ]
+          } ]
+        }
+      },
+      "version" : "v0.9.1"
+    } ],
+    "expectText" : [ "Pick a file to preview" ],
+    "name" : "FilePreview",
+    "state" : "empty",
+    "surfaceId" : "filepreview-empty"
+  }, {
+    "catalogId" : "agentspaces-widgets",
+    "envelopes" : [ {
+      "createSurface" : {
+        "catalogId" : "agentspaces-widgets",
+        "surfaceId" : "filepreview-loading"
+      },
+      "version" : "v0.9.1"
+    }, {
+      "updateComponents" : {
+        "components" : [ {
+          "children" : [ "preview" ],
+          "component" : "Column",
+          "id" : "root"
+        }, {
+          "component" : "FilePreview",
+          "file" : {
+            "path" : "/selected/file"
+          },
+          "files" : "/files",
+          "id" : "preview"
+        } ],
+        "surfaceId" : "filepreview-loading"
+      },
+      "version" : "v0.9.1"
+    }, {
+      "updateDataModel" : {
+        "path" : "/",
+        "surfaceId" : "filepreview-loading",
+        "value" : {
+          "selected" : {
+            "file" : "f-q3"
+          }
+        }
+      },
+      "version" : "v0.9.1"
+    } ],
+    "expectText" : [ "Loading" ],
+    "name" : "FilePreview",
+    "state" : "loading",
+    "surfaceId" : "filepreview-loading"
+  }, {
+    "catalogId" : "agentspaces-widgets",
+    "envelopes" : [ {
+      "createSurface" : {
+        "catalogId" : "agentspaces-widgets",
+        "surfaceId" : "filepreview-error"
+      },
+      "version" : "v0.9.1"
+    }, {
+      "updateComponents" : {
+        "components" : [ {
+          "children" : [ "preview" ],
+          "component" : "Column",
+          "id" : "root"
+        }, {
+          "component" : "FilePreview",
+          "file" : {
+            "path" : "/selected/file"
+          },
+          "files" : "/files",
+          "id" : "preview"
+        } ],
+        "surfaceId" : "filepreview-error"
+      },
+      "version" : "v0.9.1"
+    }, {
+      "updateDataModel" : {
+        "path" : "/",
+        "surfaceId" : "filepreview-error",
+        "value" : {
+          "files" : [ {
+            "at" : "2026-11-10T09:00:00Z",
+            "by" : "ana",
+            "bytes" : 9000000,
+            "id" : "f-q3",
+            "mediaType" : "text/csv",
+            "name" : "q3-expenses.csv",
+            "path" : "data/q3-expenses.csv",
+            "replaces" : "",
+            "root" : "r-q3",
+            "schemaVersion" : 2,
+            "sha256" : "sha256:00",
+            "sharedWith" : [ ]
+          } ],
+          "selected" : {
+            "file" : "f-q3"
+          }
+        }
+      },
+      "version" : "v0.9.1"
+    } ],
+    "expectText" : [ "q3-expenses.csv", "Too large to preview", "Download" ],
+    "name" : "FilePreview",
+    "state" : "error",
+    "surfaceId" : "filepreview-error"
   } ]
 }

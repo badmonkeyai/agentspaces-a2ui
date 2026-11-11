@@ -31,8 +31,8 @@ public record SurfaceAction(int schemaVersion, String app, String surfaceId, Str
     public static final int VERSION = 1;
 
     public SurfaceAction {
-        // the app and the surface id are dereferenced by the bridge's write set and the pen, so a null is
-        // refused; the instant defaults
+        // the app and the surface id are dereferenced by the hosts that tag actions by them and by the pen,
+        // so a null is refused; the instant defaults
         Objects.requireNonNull(app, "app");
         Objects.requireNonNull(surfaceId, "surfaceId");
         at = at == null ? Instant.now() : at;

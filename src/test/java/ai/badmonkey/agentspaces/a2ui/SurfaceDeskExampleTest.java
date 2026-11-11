@@ -44,8 +44,7 @@ import static org.assertj.core.api.Assertions.assertThat;
  * The example: an agent draws a surface into a plain group and a renderer answers it, with nothing but this module
  * and the runtime. Two peers over TCP share a {@code views} space; the desk peer draws one card per decision with a
  * {@link Surfaces} pen, and the renderer peer reads the envelopes back in order, then presses the card's button, which
- * arrives at the desk as a {@link SurfaceAction}. A platform console that joins the group draws the same envelopes;
- * so does any A2UI renderer.
+ * arrives at the desk as a {@link SurfaceAction}. Any A2UI renderer that joins the group draws the same envelopes.
  */
 class SurfaceDeskExampleTest {
 

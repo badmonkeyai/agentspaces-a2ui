@@ -43,7 +43,7 @@ class VizCatalogTest {
     static final Instant AT = Instant.parse("2026-11-06T09:00:00Z");
 
     @Test
-    void theCatalogDeclaresTheNineComponentsAndTheirRules() {
+    void theCatalogDeclaresItsComponentsAndTheirRules() {
         JsonNode catalog = VizCatalog.catalog();
         assertThat(VizCatalog.ID).isEqualTo("agentspaces-viz");
         assertThat(VizCatalog.CATALOG_PATH).isEqualTo("/catalogs/agentspaces-viz/catalog.json");
@@ -90,7 +90,11 @@ class VizCatalogTest {
                 Map.entry("Notice", () -> Surfaces.notice("note", "warning", "No model bound", "/why", "dismiss")),
                 Map.entry("Toolbar", () -> Surfaces.toolbar("bar", "Desk", List.of(Map.of("label", "Refresh", "action", "refresh")))),
                 Map.entry("KeyValue", () -> Surfaces.keyValue("facts", "The desk", List.of(Map.of("label", "Open", "value", "/open")), "")),
-                Map.entry("Prose", () -> Surfaces.prose("notes", "/notes")));
+                Map.entry("Prose", () -> Surfaces.prose("notes", "/notes")),
+                Map.entry("TitleBar", () -> Surfaces.titleBar("bar", "Workbench", "", "", Map.of(), List.of(), "")),
+                Map.entry("Menu", () -> Surfaces.menu("more", Surfaces.trigger("overflow", "More"), List.of(Surfaces.menuItem("help", "Help", "help")))),
+                Map.entry("Split", () -> Surfaces.split("main", "horizontal", "", 0, List.of(Surfaces.pane("left", "tree", 0.5, 180, false, "Files"),
+                        Surfaces.pane("right", "chat", 0.5, 300, true, "Chat")))));
         JsonNode catalog = VizCatalog.catalog();
         for (String name : VizCatalog.COMPONENTS) {
             Map<String, Object> component = builders.get(name).get();
@@ -176,6 +180,8 @@ class VizCatalogTest {
                 Map.of("notes", "Spend rose **four percent** this week."), List.of("Spend rose", "four percent")));
         surfaces.add(golden("Stat", VizCatalog.ID, List.of(Surfaces.stat("open", "Open claims", "/open", "claims", "/openDelta", "/openStatus")),
                 Map.of("open", 42, "openDelta", -3, "openStatus", "good"), List.of("Open claims", "42", "claims")));
+        surfaces.addAll(frameGoldens());
+        surfaces.addAll(appGoldens());
         String json = new com.fasterxml.jackson.databind.ObjectMapper().enable(com.fasterxml.jackson.databind.SerializationFeature.ORDER_MAP_ENTRIES_BY_KEYS).writerWithDefaultPrettyPrinter().writeValueAsString(Map.of("surfaces", surfaces)) + "\n";
         Path golden = Path.of("src/test/resources/golden/surfaces.json");
         if (!Files.exists(golden)) {
@@ -184,6 +190,183 @@ class VizCatalogTest {
         }
         assertThat(json).as("the golden surfaces are pinned; delete the file to regenerate").isEqualTo(Files.readString(golden, StandardCharsets.UTF_8));
         assertThat(surfaces).extracting(m -> m.get("name")).contains("Text").containsAll(VizCatalog.COMPONENTS);
+        for (String frame : List.of("TitleBar", "Menu", "Split", "Chat", "FileTree", "FilePreview")) {
+            assertThat(surfaces.stream().filter(g -> frame.equals(g.get("name"))).map(g -> g.get("state")).toList()).as(frame + " in four states")
+                    .containsExactly("full", "empty", "loading", "error");
+        }
+        assertThat(surfaces.stream().map(g -> g.get("surfaceId")).distinct().count()).as("one surface id per golden").isEqualTo(surfaces.size());
+    }
+
+    /**
+     * Spiral 6 S6-U-25: the frame components, each in four states (full, empty, loading, error), so the gallery shows what
+     * a person sees before the data arrives and when it is wrong as well as when it is whole.
+     */
+    static List<Map<String, Object>> frameGoldens() {
+        List<Map<String, Object>> out = new java.util.ArrayList<>();
+        Map<String, Object> status = Surfaces.titleStatus("/working", "Agent working", "Ready");
+        List<Map<String, Object>> barMenu = List.of(Surfaces.menuItem("new-chat", "New chat", "chat.new"), Surfaces.menuItem("help", "Help", "help"));
+        Map<String, Object> share = Surfaces.titleAction("share", "Share", "share", "share");
+        out.add(golden("TitleBar", "full", VizCatalog.ID, List.of(Surfaces.column("root", List.of("bar")),
+                        Surfaces.titleBar("bar", Map.of("path", "/app/title"), "Claims desk", "briefcase", status, List.of(share), "bar-menu"),
+                        Surfaces.menu("bar-menu", Surfaces.trigger("overflow", "More"), barMenu)),
+                Map.of("app", Map.of("title", "Workbench"), "working", List.of(Map.of("id", "working-workbench-main", "agent", "workbench", "key", "main",
+                        "files", List.of("data/q3-expenses.csv"), "task", "reading q3-expenses.csv", "state", "working", "since", "2026-11-10T09:00:00Z"))),
+                List.of("Workbench", "Claims desk", "Agent working", "Share", "More")));
+        out.add(golden("TitleBar", "empty", VizCatalog.ID, List.of(Surfaces.titleBar("bar", "Workbench", "", "", Map.of(), List.of(), "")), Map.of(), List.of("Workbench")));
+        out.add(golden("TitleBar", "loading", VizCatalog.ID, List.of(Surfaces.titleBar("bar", Map.of("path", "/app/title"), "", "", status, List.of(), "")),
+                Map.of(), List.of("Loading")));
+        out.add(golden("TitleBar", "error", VizCatalog.ID, List.of(Surfaces.titleBar("bar", "Workbench", "", "", status, List.of(), "")),
+                Map.of("working", List.of(Map.of("id", "working-workbench-main", "agent", "workbench", "key", "main", "files", List.of(), "task", "",
+                        "state", "failed", "since", "2026-11-10T09:00:00Z"))), List.of("Workbench", "The agent stopped")));
+        List<Map<String, Object>> items = List.of(
+                Surfaces.menuItem("new-chat", "New chat", "chat.new", Map.of("shortcut", "Ctrl+Shift+O")),
+                Surfaces.menuItem("dark", "Dark mode", "view.dark", Map.of("checked", Map.of("path", "/view/dark"))),
+                Surfaces.menuItem("export", "Export", "export", Map.of("disabled", true)),
+                Surfaces.submenu("share", "Share", List.of(Surfaces.menuItem("copy-link", "Copy link", "share.link"), Surfaces.menuItem("email", "Email", "share.email"))),
+                Surfaces.menuItem("help", "Help", "help", Map.of("group", "about")));
+        out.add(golden("Menu", "full", VizCatalog.ID, List.of(Surfaces.menu("menu", Surfaces.trigger("button", "Actions"), items)), Map.of("view", Map.of("dark", false)),
+                List.of("Actions")));
+        out.add(golden("Menu", "empty", VizCatalog.ID, List.of(Surfaces.menu("menu", Surfaces.trigger("button", "Actions"), List.of())), Map.of(), List.of("Actions", "None")));
+        out.add(golden("Menu", "loading", VizCatalog.ID, List.of(Surfaces.menu("menu", Surfaces.trigger("button", "Actions"), "/menu")), Map.of(), List.of("Actions", "Loading")));
+        out.add(golden("Menu", "error", VizCatalog.ID, List.of(Surfaces.menu("menu", Surfaces.trigger("button", "Actions"), "/menu")), Map.of("menu", "not a list"),
+                List.of("Actions", "Unavailable")));
+        List<Map<String, Object>> three = List.of(Surfaces.pane("left", "files", 0.25, 180, true, "Files"), Surfaces.pane("mid", "preview", 0.45, 320, false, "Preview"),
+                Surfaces.pane("right", "chat", 0.30, 300, true, "Chat"));
+        out.add(golden("Split", "full", VizCatalog.ID, List.of(Surfaces.column("root", List.of("main")), Surfaces.split("main", "horizontal", "workbench-main", 720, three),
+                        Surfaces.text("files", "notes/summary.md", "body"), Surfaces.prose("preview", "/note"), Surfaces.text("chat", "Ask about a file", "body")),
+                Map.of("note", "Spend rose **four percent**."), List.of("Files", "Preview", "Chat", "notes/summary.md", "Spend rose", "Ask about a file")));
+        out.add(golden("Split", "empty", VizCatalog.ID, List.of(Surfaces.split("main", "horizontal", "", 0, List.of(Surfaces.pane("left", "", 0.5, 0, false, "Files"),
+                Surfaces.pane("right", "", 0.5, 0, false, "Chat")))), Map.of(), List.of("Files", "Chat", "Nothing here yet")));
+        out.add(golden("Split", "loading", VizCatalog.ID, List.of(Surfaces.column("root", List.of("main")), Surfaces.split("main", "vertical", "", 0,
+                        List.of(Surfaces.pane("top", "open", 0.5, 0, false, "Open"), Surfaces.pane("bottom", "closed", 0.5, 0, false, "Closed"))),
+                Surfaces.stat("open", "Open claims", "/open", "", "", ""), Surfaces.stat("closed", "Closed claims", "/closed", "", "", "")),
+                Map.of(), List.of("Open claims", "Closed claims")));
+        out.add(golden("Split", "error", VizCatalog.ID, List.of(Surfaces.split("main", "horizontal", "", 0, List.of(Surfaces.pane("left", "gone", 0.5, 0, false, "Files"),
+                Surfaces.pane("right", "", 0.5, 0, false, "Chat")))), Map.of(), List.of("Files", "Chat", "Missing content: gone")));
+        return out;
+    }
+
+    /**
+     * Spiral 6 S6-U-25 for the application components of {@code agentspaces-widgets} (Chat, FileTree, FilePreview),
+     * each in four states: what a person sees with the data, before it, while the agent works or the rows load, and
+     * when it goes wrong (the agent stopped, a list that does not read, a file too large to preview).
+     */
+    static List<Map<String, Object>> appGoldens() {
+        List<Map<String, Object>> out = new java.util.ArrayList<>();
+        String w = WidgetsCatalog.ID;
+        Map<String, Object> q3 = row("schemaVersion", 2, "id", "f-q3", "name", "q3-expenses.csv", "mediaType", "text/csv", "bytes", 1840, "root", "r-q3",
+                "sha256", "sha256:00", "by", "ana", "sharedWith", List.of(), "at", "2026-11-10T09:00:00Z", "path", "data/q3-expenses.csv", "replaces", "");
+        Map<String, Object> note = row("schemaVersion", 2, "id", "f-note", "name", "overspend.md", "mediaType", "text/markdown", "bytes", 420, "root", "r-note",
+                "sha256", "sha256:01", "by", "workbench", "sharedWith", List.of(), "at", "2026-11-10T09:01:00Z", "path", "notes/overspend.md", "replaces", "");
+        Map<String, Object> question = row("schemaVersion", 1, "id", "m-1", "key", "main", "from", Map.of("kind", "person", "name", "ana", "peer", ""),
+                "text", "Where did we overspend in Q3?", "attachments", List.of("f-q3"), "inReplyTo", "", "at", "2026-11-10T09:00:30Z");
+        Map<String, Object> answer = row("schemaVersion", 2, "id", "m-2", "key", "main", "from", Map.of("kind", "agent", "name", "workbench", "peer", ""),
+                "text", "Travel ran **18 percent** over its budget.", "attachments", List.of(), "inReplyTo", "m-1", "at", "2026-11-10T09:01:00Z",
+                "format", "text/markdown", "cites", List.of(Map.of("file", "f-q3", "path", "data/q3-expenses.csv", "name", "q3-expenses.csv")));
+        Map<String, Object> working = row("schemaVersion", 1, "id", "progress-m-1", "key", "main", "inReplyTo", "m-1", "agent", "workbench", "state", "working",
+                "steps", List.of(Map.of("label", "read q3-expenses.csv", "kind", "read", "ref", "f-q3", "at", "2026-11-10T09:00:31Z")), "at", "2026-11-10T09:00:31Z");
+        Map<String, Object> options = Map.of("suggestions", List.of("Summarise the newest file"), "attach", true, "format", "text/markdown",
+                "controls", List.of("copy", "retry", "stop", "feedback"));
+        out.add(golden("Chat", "full", w, List.of(Surfaces.chat("chat", "workbench", "main", options)),
+                Map.of("conversations", List.of(question, answer), "files", List.of(q3, note), "progress", List.of()),
+                List.of("workbench", "Where did we overspend in Q3?", "Travel ran", "18 percent", "q3-expenses.csv", "Send")));
+        out.add(golden("Chat", "empty", w, List.of(Surfaces.chat("chat", "workbench", "main", options)), Map.of(),
+                List.of("workbench", "No message yet", "Summarise the newest file", "Send")));
+        out.add(golden("Chat", "loading", w, List.of(Surfaces.chat("chat", "workbench", "main", options)),
+                Map.of("conversations", List.of(question), "files", List.of(q3), "progress", List.of(working)),
+                List.of("Where did we overspend in Q3?", "working: read q3-expenses.csv")));
+        Map<String, Object> failed = new java.util.LinkedHashMap<>(working);
+        failed.put("state", "failed");
+        out.add(golden("Chat", "error", w, List.of(Surfaces.chat("chat", "workbench", "main", options)),
+                Map.of("conversations", List.of(question), "files", List.of(q3), "progress", List.of(failed)),
+                List.of("Where did we overspend in Q3?", "The agent stopped", "Retry")));
+        Map<String, Object> holding = row("schemaVersion", 1, "id", "working-workbench-main", "agent", "workbench", "key", "main",
+                "files", List.of("data/q3-expenses.csv"), "task", "reading q3-expenses.csv", "state", "working", "since", "2026-11-10T09:00:31Z");
+        Map<String, Object> treeOptions = Map.of("working", "/working", "upload", true, "label", "Files", "actions", List.of("ask", "download", "share", "rename", "remove"));
+        out.add(golden("FileTree", "full", w, List.of(Surfaces.fileTree("tree", "/files", treeOptions)), Map.of("files", List.of(q3, note), "working", List.of(holding)),
+                List.of("Files", "data", "q3-expenses.csv", "notes", "overspend.md", "workbench")));
+        out.add(golden("FileTree", "empty", w, List.of(Surfaces.fileTree("tree", "/files", treeOptions)), Map.of("files", List.of()), List.of("Files", "No file yet", "Upload")));
+        out.add(golden("FileTree", "loading", w, List.of(Surfaces.fileTree("tree", "/files", treeOptions)), Map.of(), List.of("Files", "Loading files")));
+        out.add(golden("FileTree", "error", w, List.of(Surfaces.fileTree("tree", "/files", treeOptions)), Map.of("files", "not a list"), List.of("Files", "Unavailable")));
+        Map<String, Object> pick = Map.of("path", "/selected/file");
+        out.add(golden("FilePreview", "full", w, List.of(Surfaces.filePreview("preview", pick, Map.of("files", "/files"))), Map.of("files", List.of(q3, note), "selected", Map.of("file", "f-q3")),
+                List.of("q3-expenses.csv", "text/csv", "1.8 KiB", "Download")));
+        out.add(golden("FilePreview", "empty", w, List.of(Surfaces.filePreview("preview", pick, Map.of("files", "/files"))), Map.of("files", List.of(q3)),
+                List.of("Pick a file to preview")));
+        out.add(golden("FilePreview", "loading", w, List.of(Surfaces.filePreview("preview", pick, Map.of("files", "/files"))), Map.of("selected", Map.of("file", "f-q3")),
+                List.of("Loading")));
+        Map<String, Object> large = new java.util.LinkedHashMap<>(q3);
+        large.put("bytes", 9_000_000);
+        out.add(golden("FilePreview", "error", w, List.of(Surfaces.filePreview("preview", pick, Map.of("files", "/files"))), Map.of("files", List.of(large), "selected", Map.of("file", "f-q3")),
+                List.of("q3-expenses.csv", "Too large to preview", "Download")));
+        return out;
+    }
+
+    /** A record's fields as a page reads them, in the order given. */
+    private static Map<String, Object> row(Object... keysAndValues) {
+        Map<String, Object> m = new java.util.LinkedHashMap<>();
+        for (int i = 0; i < keysAndValues.length; i += 2) {
+            m.put((String) keysAndValues[i], keysAndValues[i + 1]);
+        }
+        return m;
+    }
+
+    private static Map<String, Object> golden(String name, String state, String catalogId, List<Map<String, Object>> components, Map<String, Object> data, List<String> expectText) {
+        Map<String, Object> g = golden(name, catalogId, components, data, expectText);
+        g.put("state", state);
+        if (!"full".equals(state)) {
+            String id = name.toLowerCase() + "-" + state;
+            g.put("surfaceId", id);
+            g.put("envelopes", ((List<?>) g.get("envelopes")).stream().map(e -> retarget((Map<?, ?>) e, id)).toList());
+        }
+        return g;
+    }
+
+    @SuppressWarnings("unchecked")
+    private static Map<String, Object> retarget(Map<?, ?> envelope, String surfaceId) {
+        Map<String, Object> out = new java.util.LinkedHashMap<>();
+        envelope.forEach((k, v) -> {
+            if (v instanceof Map<?, ?> body) {
+                Map<String, Object> b = new java.util.LinkedHashMap<>((Map<String, Object>) body);
+                b.put("surfaceId", surfaceId);
+                out.put((String) k, b);
+            } else {
+                out.put((String) k, v);
+            }
+        });
+        return out;
+    }
+
+    @Test
+    void theFrameComponentsCarryTheirShapes() {
+        JsonNode c = VizCatalog.catalog().path("components");
+        assertThat(c.path("TitleBar").path("required")).extracting(JsonNode::asText).containsExactly("title");
+        assertThat(c.path("Menu").path("properties").path("trigger").path("properties").path("kind").path("enum")).extracting(JsonNode::asText)
+                .containsExactly("button", "overflow", "context");
+        assertThat(c.path("Split").path("properties").path("panes").path("minItems").asInt()).isEqualTo(2);
+        assertThat(c.path("Split").path("properties").path("panes").path("maxItems").asInt()).isEqualTo(3);
+        assertThat(c.path("Split").path("properties").path("orientation").path("enum")).extracting(JsonNode::asText).containsExactly("horizontal", "vertical");
+        assertThat(c.path("Window").path("properties").has("actions")).as("S6-U-03").isTrue();
+        assertThat(c.path("Toolbar").path("properties").path("menu").path("type").asText()).as("S6-U-02").isEqualTo("string");
+        // the builders' shapes, as SRAD §3.5 gives them
+        Map<String, Object> bar = Surfaces.titleBar("bar", Map.of("path", "/app/title"), "Claims desk", "briefcase", Surfaces.titleStatus("/working", "Agent working", "Ready"),
+                List.of(Surfaces.titleAction("share", "Share", "share", "share")), "bar-menu");
+        assertThat(bar).containsEntry("title", Map.of("path", "/app/title")).containsEntry("menu", "bar-menu")
+                .containsEntry("status", Map.of("from", "/working", "labels", Map.of("working", "Agent working", "idle", "Ready")));
+        assertThat(bar.get("actions")).isEqualTo(List.of(Map.of("id", "share", "label", "Share", "icon", "share", "action", Map.of("name", "share"))));
+        assertThat(Surfaces.titleBar("bar", "Workbench", null, null, null, null, null)).containsOnlyKeys("id", "component", "title");
+        Map<String, Object> sub = Surfaces.submenu("share", "Share", List.of(Surfaces.menuItem("copy", "Copy link", "share.link")));
+        assertThat(sub).containsEntry("items", List.of(Map.of("id", "copy", "label", "Copy link", "action", Map.of("name", "share.link")))).doesNotContainKey("action");
+        assertThatThrownBy(() -> Surfaces.submenu("a", "A", List.of(sub))).as("one level of submenu").hasMessageContaining("one level");
+        assertThat(Surfaces.pane("left", "tree", 0.25, 180, true, "Files")).isEqualTo(Map.of("id", "left", "child", "tree", "size", 0.25, "min", 180, "collapsible", true, "label", "Files"));
+        assertThat(Surfaces.split("main", "horizontal", "workbench-main", 720, List.of(Surfaces.pane("a", "x", 0.5, 0, false, ""), Surfaces.pane("b", "y", 0.5, 0, false, ""))))
+                .containsEntry("persist", "workbench-main").containsEntry("stackBelow", 720).containsEntry("orientation", "horizontal");
+        assertThatThrownBy(() -> Surfaces.split("main", "horizontal", "", 0, List.of(Surfaces.pane("a", "x", 1.0, 0, false, "")))).hasMessageContaining("two or three");
+        assertThatThrownBy(() -> Surfaces.split("main", "diagonal", "", 0, List.of(Surfaces.pane("a", "x", 0.5, 0, false, ""), Surfaces.pane("b", "y", 0.5, 0, false, ""))))
+                .hasMessageContaining("orientation");
+        assertThat(Surfaces.window("box", "Truck 3", "note", "flow", List.of(Surfaces.titleAction("ack", "Acknowledge", "", "acknowledge"))).get("actions"))
+                .isEqualTo(List.of(Map.of("id", "ack", "label", "Acknowledge", "action", Map.of("name", "acknowledge"))));
+        assertThat(Surfaces.toolbar("tools", "Desk", List.of(), "tools-menu")).containsEntry("menu", "tools-menu");
     }
 
     /** One golden surface: its envelopes (create, components, data) and the text a person must find when it is drawn. */

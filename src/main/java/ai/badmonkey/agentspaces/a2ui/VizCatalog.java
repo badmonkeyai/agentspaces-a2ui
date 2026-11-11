@@ -21,7 +21,7 @@ import java.util.List;
 
 /**
  * The open {@code agentspaces-viz} catalog: the components people look at (Chart, DataTable, Map, Graph, Timeline,
- * Report, Notification, Form, Stat, and the panels beside them), as one JSON document in A2UI's catalog shape, carried
+ * Report, Notification, Form, Stat, the panels beside them, and the frame of a page: TitleBar, Menu, Split), as one JSON document in A2UI's catalog shape, carried
  * in this jar so a renderer, a host, and a catalog policy read the same file. The look-and-feel schema beside it says
  * what a look and feel document may carry. {@link WidgetsCatalog} is the open catalog of raw widgets beside it.
  */
@@ -30,7 +30,7 @@ public final class VizCatalog {
     public static final String ID = "agentspaces-viz";
     public static final String CATALOG_PATH = "/catalogs/agentspaces-viz/catalog.json";
     public static final String LOOK_AND_FEEL_SCHEMA_PATH = "/catalogs/look-and-feel.schema.json";
-    public static final List<String> COMPONENTS = List.of("Chart", "DataTable", "Map", "Graph", "Timeline", "Report", "Notification", "Form", "Stat", "Window", "Conversation", "Notice", "Toolbar", "KeyValue", "Prose");
+    public static final List<String> COMPONENTS = List.of("Chart", "DataTable", "Map", "Graph", "Timeline", "Report", "Notification", "Form", "Stat", "Window", "Conversation", "Notice", "Toolbar", "KeyValue", "Prose", "TitleBar", "Menu", "Split");
     private VizCatalog() {
     }
 

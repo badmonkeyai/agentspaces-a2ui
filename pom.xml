@@ -80,7 +80,7 @@
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
 
-    <!-- Tests only: the canonical codec that pins the bytes, and the test tools the core uses. -->
+    <!-- The AgentSpaces core this library builds on (its BOM is imported below), and the test tools the core uses. -->
     <agentspaces.version>0.6.0</agentspaces.version>
     <junit.version>5.13.4</junit.version>
     <assertj.version>3.27.7</assertj.version>

@@ -22,8 +22,9 @@ import java.util.List;
 /**
  * The open {@code agentspaces-widgets} catalog: the raw widgets of an application, each of which reads a list from the
  * surface's data model and writes an entry back through the host's callbacks with no dependency on a platform record.
- * ChatInput, FileShare, ApprovalCard, and TimelineStrip, as one JSON document in A2UI's catalog shape beside
- * {@link VizCatalog}. A widget's {@code entry} names a record type under {@link #NAMESPACE}, and its {@code element} is
+ * ChatInput, FileShare, ApprovalCard and TimelineStrip, and the application components (Chat, FileTree and
+ * FilePreview, of which ChatInput and FileShare are aliases through 0.6.x), as one JSON document in A2UI's catalog
+ * shape beside {@link VizCatalog}. A widget's {@code entry} names a record type under {@link #NAMESPACE}, and its {@code element} is
  * the custom element a renderer draws it with.
  */
 public final class WidgetsCatalog {
@@ -32,14 +33,22 @@ public final class WidgetsCatalog {
     public static final String CATALOG_PATH = "/catalogs/agentspaces-widgets/catalog.json";
     /** The namespace of the widgets' entry types. */
     public static final String NAMESPACE = "https://badmonkey.ai/agentspaces/a2ui/v1/";
-    public static final List<String> COMPONENTS = List.of("ChatInput", "FileShare", "ApprovalCard", "TimelineStrip");
+    public static final List<String> COMPONENTS = List.of("ChatInput", "FileShare", "ApprovalCard", "TimelineStrip", "Chat", "FileTree", "FilePreview");
 
     private WidgetsCatalog() {
     }
 
+    /** The catalog as the jar carries it, read once, for the builders' checks. */
+    private static final JsonNode CATALOG = Catalogs.read(CATALOG_PATH);
+
     /** The catalog document. */
     public static JsonNode catalog() {
         return Catalogs.read(CATALOG_PATH);
+    }
+
+    /** Refuses builder options the component's properties do not take (see {@link Surfaces#chat}). */
+    static void check(String component, java.util.Map<String, Object> options) {
+        Catalogs.checkOptions(CATALOG, component, options);
     }
 
     /** The component names the catalog declares, in the catalog's order. */
