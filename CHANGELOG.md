@@ -2,6 +2,29 @@
 
 What changed in the A2UI records, the pen, and the open catalogs, newest first.
 
+## Unreleased: 0.7.0
+
+The cutover to A2UI 1.0, with no 0.9 reading kept (srad/agentspaces-geo.md, GEO-V-01 to V-03).
+
+- **Visualize and GraphView goldens in four states** (GEO-Q-31): full, empty (a table with no row), loading (the table not arrived yet) and error (a value at its path that is no table), as the frame components have. The full ones keep their surface ids.
+- **The wire.** Every envelope says `"version": "1.0"`, the basic catalog is `https://a2ui.org/specification/v1_0/catalogs/basic/catalog.json`, and a data binding is `{"@path": ...}`. The pen refuses a binding in the old `{"path": ...}` form, naming the property.
+- **Component ids.** An id is a UAX #31 identifier, as 1.0 requires. The pen refuses one that is not, such as `bar-menu`, and suggests the camelCase form.
+- **The GeoLayout** (srad/agentspaces-geo.md §3.3). `Publish.geo(map, windows)` and `Publish.geoWindow(page, label, icon, open, dock)` set `options.layout` to `{ kind: geo, map, windows }`: the map's page full screen under a top bar, and each window a page over it, opened from the bar. Windows dock `left`, `right`, `bottom` or `free` (`Publish.DOCKS`).
+- **Visualize and GraphView** (srad/agentspaces-geo.md phase 5) join `agentspaces-viz`:
+  - **`Surfaces.visualize(id, rows, mark, x, y, options)`** charts a bound table by a spec: bar, column, line, area, scatter or table, with `color`, `aggregate` and `sort`.
+  - **`Surfaces.graphView(id, nodes, edges, layout, options)`** lays out a nodes table and an edges table, or GeoFeatures and their links, by force, as a tree, or in layers.
+  - Both builders check their options against the catalog, and both have golden surfaces. `Chart` and `Graph` are unchanged.
+- **`Surfaces.componentId(id)`** is public and returns the id, so another catalog's builders (agentspaces-a2ui-geo's) check an id the same way.
+- **A button's label.** `Surfaces.button` names its label child `<id>Text` (it was `<id>-text`), so the label you write with `Surfaces.text` takes that id.
+- **Headings.** 1.0's Text has only the `caption` and `body` variants, so `text(..., "h2")` writes a markdown heading instead.
+- **The open catalogs.** `agentspaces-viz` and `agentspaces-widgets` are 1.0 catalog documents: `protocolVersion` "1.0", a `component` const for each component, and the rules under `metadata.extensions`.
+- **Closed components and `$defs`** (GEO-V-04). Every component schema of both catalogs says `additionalProperties: false`, so a property the catalog does not declare is refused, by the feed and by any 1.0 validator. Each component also declares 1.0's envelope properties (`id`, `catalogId`, `accessibility`, `metadata`). Each catalog has `$defs`: `anyComponent` (every component by reference), `anyFunction` (no functions of its own), and the shared types (`ComponentId`, `DataBinding`, `TextOrBinding`, `NamedAction`, `HeaderAction`, `Accept`). Both documents meet web_core 0.15.0's `catalog_definition.json`. A builder's option can no longer be `id` or `component`.
+- **Agent functions** (GEO-V-07). A component's action may call one of the drawing agent's functions, A2UI 1.0's `callAgentFunction`:
+  - **`Surfaces.functionCall(function, args)`** writes 1.0's `{"functionCall": {"@call": ..., "args": {...}}}`, and **`Surfaces.functionButton`** is a button that makes it. The arguments go through the binding check. The name is an identifier of at most 64 characters, and none of `Surfaces.RENDERER_FUNCTIONS`, the basic catalog's own.
+  - **The call reaches the agent as a `SurfaceAction`** whose action carries `functionCallId`, with the function as its `name` and the arguments as its `context`. `callsFunction()`, `functionCallId()`, `function()` and `args()` read it. They have no get or is prefix, so a mapper adds nothing to the record's bytes. `pen.actions()` now tells two calls apart by their ids.
+  - **`FunctionResponse`** is a new open record in `records` (`https://badmonkey.ai/agentspaces/a2ui/v1/FunctionResponse`, space `views`, leased a minute). It carries the call's app, surface, session and id, and a value or a `Failure(code, message)`. The value is JSON of at most 32,768 characters as JSON writes it, escapes included, and 16 levels, with no NaN or infinite number. `pen.answer(call, value)` and `pen.fail(call, code, message)` write it. `A2uiRecords.RECORDS` lists five records. There is no golden vector for it.
+- **No old binding anywhere** (GEO-V-05). Every builder walks every property and option value, however deep, and refuses v0.9.1's `{"path": ...}` binding and `{"call": ...}` function call, naming where it sits (`Map.follow`, `Chart.series[0].color`, `Menu.items[].checked`). Before, only TitleBar's title, a menu item's check and FilePreview's file were checked. A property the catalog declares as `path` (a Map layer's, a Chart series') is not a binding and passes. An action context's keys are names, so an entry called `path` with a literal passes. `Surfaces.binding(catalog, where, value, schema)` and `Surfaces.bindings(catalog, component)` are public, so another catalog's builders walk their components the same way.
+
 ## Unreleased: 0.6.0
 
 The first release of agentspaces-a2ui on Maven Central, from its own repository. It builds on the AgentSpaces 0.6.0 core.

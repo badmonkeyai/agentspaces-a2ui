@@ -115,8 +115,8 @@ class WidgetsCatalogTest {
         assertThat(tree).containsEntry("component", "FileTree").containsEntry("reads", "/files").containsEntry("chat", "chat");
         assertThatThrownBy(() -> Surfaces.fileTree("tree", "/files", Map.of("actions", List.of("burn")))).hasMessageContaining("actions");
         assertThatThrownBy(() -> Surfaces.fileTree("tree", "/files", Map.of("badges", List.of("shiny")))).hasMessageContaining("badges");
-        Map<String, Object> preview = Surfaces.filePreview("preview", Map.of("path", "/selected/file"), Map.of("files", "/files", "maxBytes", 2_097_152, "csvRows", 500));
-        assertThat(preview).containsEntry("component", "FilePreview").containsEntry("file", Map.of("path", "/selected/file")).containsEntry("csvRows", 500);
+        Map<String, Object> preview = Surfaces.filePreview("preview", Map.of("@path", "/selected/file"), Map.of("files", "/files", "maxBytes", 2_097_152, "csvRows", 500));
+        assertThat(preview).containsEntry("component", "FilePreview").containsEntry("file", Map.of("@path", "/selected/file")).containsEntry("csvRows", 500);
         assertThatThrownBy(() -> Surfaces.filePreview("preview", "f-1", Map.of("maxBytes", 17_000_000))).hasMessageContaining("16 MiB");
         assertThatThrownBy(() -> Surfaces.filePreview("preview", "f-1", Map.of("kinds", List.of("text/html")))).hasMessageContaining("kinds");
     }
@@ -142,5 +142,16 @@ class WidgetsCatalogTest {
             Files.writeString(golden, json, StandardCharsets.UTF_8);
         }
         assertThat(json).as("the open widgets catalog is pinned; delete the file to regenerate").isEqualTo(Files.readString(golden, StandardCharsets.UTF_8));
+    }
+
+    @org.junit.jupiter.api.Test
+    void aBindingInTheOldFormIsRefused() {
+        // A2UI 1.0 (2026-11-12): {"path": ...} is v0.9.1's binding; the builders refuse it by name
+        org.assertj.core.api.Assertions.assertThatThrownBy(() -> Surfaces.filePreview("p", java.util.Map.of("path", "/selected/file"), java.util.Map.of()))
+                .hasMessageContaining("file binds with A2UI 1.0");
+        org.assertj.core.api.Assertions.assertThatThrownBy(() -> Surfaces.titleBar("b", java.util.Map.of("path", "/t"), "", "", null, java.util.List.of(), ""))
+                .hasMessageContaining("title binds with A2UI 1.0");
+        org.assertj.core.api.Assertions.assertThatThrownBy(() -> Surfaces.titleBar("b", java.util.Map.of("call", "formatDate", "args", java.util.Map.of()), "", "", null, java.util.List.of(), ""))
+                .hasMessageContaining("@call");
     }
 }

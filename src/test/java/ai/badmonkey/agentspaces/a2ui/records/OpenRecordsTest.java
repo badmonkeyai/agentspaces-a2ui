@@ -162,14 +162,16 @@ class OpenRecordsTest {
     }
 
     @Test
-    void theOpenNamespaceNamesTheFourRecords() {
+    void theOpenNamespaceNamesTheFiveRecords() {
         assertThat(A2uiRecords.NAMESPACE).isEqualTo("https://badmonkey.ai/agentspaces/a2ui/v1/");
         assertThat(ChatMessage.IRI).isEqualTo(A2uiRecords.NAMESPACE + "ChatMessage");
         assertThat(SharedFile.IRI).isEqualTo(A2uiRecords.NAMESPACE + "SharedFile");
         assertThat(WorkingOn.IRI).isEqualTo(A2uiRecords.NAMESPACE + "WorkingOn");
         assertThat(ChatProgress.IRI).isEqualTo(A2uiRecords.NAMESPACE + "ChatProgress");
         assertThat(List.of(ChatMessage.SPACE, SharedFile.SPACE, WorkingOn.SPACE, ChatProgress.SPACE)).containsExactly("conversations", "shared", "views", "views");
-        assertThat(A2uiRecords.RECORDS).containsExactly(ChatMessage.class, SharedFile.class, WorkingOn.class, ChatProgress.class);
+        assertThat(FunctionResponse.IRI).isEqualTo(A2uiRecords.NAMESPACE + "FunctionResponse");
+        assertThat(FunctionResponse.SPACE).isEqualTo("views");
+        assertThat(A2uiRecords.RECORDS).containsExactly(ChatMessage.class, SharedFile.class, WorkingOn.class, ChatProgress.class, FunctionResponse.class);
     }
 
     @Test

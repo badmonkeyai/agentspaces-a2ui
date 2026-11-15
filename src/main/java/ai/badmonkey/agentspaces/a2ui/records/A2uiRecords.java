@@ -21,7 +21,7 @@ import java.util.Map;
 
 /**
  * The open records of {@code agentspaces-a2ui}: the
- * entries a chat, a file tree and a progress line read, under the open namespace {@link #NAMESPACE}. A peer that maps
+ * entries a chat, a file tree and a progress line read, and an agent's answer to a page's function call, under the open namespace {@link #NAMESPACE}. A peer that maps
  * this package names each record {@code NAMESPACE + simple name} on the wire.
  *
  * <p>{@link ChatMessage} and {@link SharedFile} have a version 2 whose new fields are omitted while null, so a version 1
@@ -37,8 +37,8 @@ public final class A2uiRecords {
     /** The member hint a reader of version 2 advertises, and its value. */
     public static final String HINT = "a2ui.records";
     public static final String HINT_VALUE = "2";
-    /** The four records, in the order the SPEC lists them. */
-    public static final List<Class<?>> RECORDS = List.of(ChatMessage.class, SharedFile.class, WorkingOn.class, ChatProgress.class);
+    /** The five records, in the order the SPEC lists them; {@link FunctionResponse} joined in 0.7.0 and has one version. */
+    public static final List<Class<?>> RECORDS = List.of(ChatMessage.class, SharedFile.class, WorkingOn.class, ChatProgress.class, FunctionResponse.class);
 
     private A2uiRecords() {
     }

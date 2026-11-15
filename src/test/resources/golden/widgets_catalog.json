@@ -1,20 +1,119 @@
 {
-  "$schema" : "https://json-schema.org/draft/2020-12/schema",
+  "$defs" : {
+    "Accept" : {
+      "description" : "media types and extensions, such as .json or text/*; empty takes every file",
+      "items" : {
+        "type" : "string"
+      },
+      "type" : "array"
+    },
+    "AccessibilityAttributes" : {
+      "$ref" : "https://a2ui.org/specification/v1_0/common_types.json#/$defs/AccessibilityAttributes",
+      "description" : "A2UI 1.0's accessibility attributes: a label and a description for assistive technologies."
+    },
+    "CatalogId" : {
+      "description" : "The catalog ID for this component, overriding any surface-level default catalogId (A2UI 1.0's ComponentCommon).",
+      "type" : "string"
+    },
+    "ComponentId" : {
+      "description" : "The id of a component on the same surface (A2UI 1.0's ComponentId): a component's own id, or the id of the child, the menu or the map it names.",
+      "type" : "string"
+    },
+    "ComponentMetadata" : {
+      "additionalProperties" : false,
+      "description" : "Optional component-level metadata for vendor extensions (A2UI 1.0's ComponentCommon).",
+      "properties" : {
+        "extensions" : {
+          "$ref" : "https://a2ui.org/specification/v1_0/common_types.json#/$defs/Extensions"
+        }
+      },
+      "type" : "object"
+    },
+    "DataBinding" : {
+      "additionalProperties" : false,
+      "description" : "A2UI 1.0's data binding: a JSON pointer into the data model. v0.9.1's {\"path\": ...} is not one.",
+      "properties" : {
+        "@path" : {
+          "description" : "a JSON pointer into the data model",
+          "type" : "string"
+        }
+      },
+      "required" : [ "@path" ],
+      "type" : "object"
+    },
+    "TextOrBinding" : {
+      "description" : "a literal, or a DataBinding into the data model",
+      "oneOf" : [ {
+        "type" : "string"
+      }, {
+        "$ref" : "#/$defs/DataBinding"
+      } ]
+    },
+    "anyComponent" : {
+      "discriminator" : {
+        "propertyName" : "component"
+      },
+      "oneOf" : [ {
+        "$ref" : "#/components/ChatInput"
+      }, {
+        "$ref" : "#/components/FileShare"
+      }, {
+        "$ref" : "#/components/ApprovalCard"
+      }, {
+        "$ref" : "#/components/TimelineStrip"
+      }, {
+        "$ref" : "#/components/Chat"
+      }, {
+        "$ref" : "#/components/FileTree"
+      }, {
+        "$ref" : "#/components/FilePreview"
+      } ]
+    },
+    "anyFunction" : {
+      "description" : "This catalog declares no functions of its own; a surface calls the basic catalog's functions, so no function call validates against this catalog alone.",
+      "not" : { }
+    }
+  },
+  "$schema" : "https://a2ui.org/specification/v1_0/catalog_definition.json",
   "catalogId" : "agentspaces-widgets",
   "components" : {
     "ApprovalCard" : {
+      "additionalProperties" : false,
       "description" : "the electorate's ballot over the vote capability",
       "element" : "agentspaces-approval-card",
       "entry" : "",
-      "properties" : { },
+      "properties" : {
+        "accessibility" : {
+          "$ref" : "#/$defs/AccessibilityAttributes"
+        },
+        "catalogId" : {
+          "$ref" : "#/$defs/CatalogId"
+        },
+        "component" : {
+          "const" : "ApprovalCard"
+        },
+        "id" : {
+          "$ref" : "#/$defs/ComponentId",
+          "description" : "the component's id, unique on its surface"
+        },
+        "metadata" : {
+          "$ref" : "#/$defs/ComponentMetadata"
+        }
+      },
       "reads" : "/approvals",
+      "required" : [ "component" ],
+      "type" : "object",
       "writes" : "a ballot action"
     },
     "Chat" : {
+      "additionalProperties" : false,
       "description" : "The one agentic chat: a thread of ChatMessage rows as bubbles, the agent named over it, suggestions, a Send box, drafts kept across redraws, times in the viewer's zone, the visitor's own thread; a progress line and the agent's steps from the line's ChatProgress in the A2A task words, and 'the agent stopped' with Retry when it lapses while working; Markdown answers with code blocks that copy; attachment and citation chips; the controls copy, retry, stop and feedback as actions.",
       "element" : "agentspaces-chat",
       "entry" : "https://badmonkey.ai/agentspaces/a2ui/v1/ChatMessage",
       "properties" : {
+        "accessibility" : {
+          "$ref" : "#/$defs/AccessibilityAttributes"
+        },
         "agent" : {
           "description" : "the agent that answers, named over the thread",
           "type" : "string"
@@ -23,6 +122,12 @@
           "default" : false,
           "description" : "a person attaches files: dropped on the chat, picked, or sent from a FileTree's Ask about",
           "type" : "boolean"
+        },
+        "catalogId" : {
+          "$ref" : "#/$defs/CatalogId"
+        },
+        "component" : {
+          "const" : "Chat"
         },
         "controls" : {
           "description" : "the controls under an answer: copy its text, retry (a new line in reply to the same question), stop (the chat.stop action), feedback (the chat.feedback action, up or down)",
@@ -41,6 +146,10 @@
           "description" : "how an answer without its own format reads; an answer of text/markdown always draws as safe Markdown",
           "enum" : [ "text/plain", "text/markdown" ]
         },
+        "id" : {
+          "$ref" : "#/$defs/ComponentId",
+          "description" : "the component's id, unique on its surface"
+        },
         "key" : {
           "description" : "the thread; a visitor with no sign-on writes into its own thread of it",
           "type" : "string"
@@ -52,13 +161,16 @@
           "minimum" : 1,
           "type" : "integer"
         },
+        "metadata" : {
+          "$ref" : "#/$defs/ComponentMetadata"
+        },
         "placeholder" : {
           "description" : "the hint in the empty message box",
           "type" : "string"
         },
         "preview" : {
-          "description" : "the id of a FilePreview a citation chip opens its file in",
-          "type" : "string"
+          "$ref" : "#/$defs/ComponentId",
+          "description" : "the id of a FilePreview a citation chip opens its file in"
         },
         "progress" : {
           "default" : "/progress",
@@ -84,20 +196,39 @@
         }
       },
       "reads" : "/conversations",
+      "required" : [ "component" ],
+      "type" : "object",
       "writes" : "ChatMessage"
     },
     "ChatInput" : {
+      "additionalProperties" : false,
       "description" : "a thread per key as chat bubbles, replies, attachments, suggested questions; an alias of Chat through 0.6.x, drawn by it",
       "element" : "agentspaces-chat-input",
       "entry" : "https://badmonkey.ai/agentspaces/a2ui/v1/ChatMessage",
       "properties" : {
+        "accessibility" : {
+          "$ref" : "#/$defs/AccessibilityAttributes"
+        },
         "agent" : {
           "description" : "the agent that answers, named over the thread",
           "type" : "string"
         },
+        "catalogId" : {
+          "$ref" : "#/$defs/CatalogId"
+        },
+        "component" : {
+          "const" : "ChatInput"
+        },
+        "id" : {
+          "$ref" : "#/$defs/ComponentId",
+          "description" : "the component's id, unique on its surface"
+        },
         "key" : {
           "description" : "the conversation key shown; empty for every key",
           "type" : "string"
+        },
+        "metadata" : {
+          "$ref" : "#/$defs/ComponentMetadata"
         },
         "placeholder" : {
           "description" : "the hint in the empty message box",
@@ -112,13 +243,25 @@
         }
       },
       "reads" : "/conversations",
+      "required" : [ "component" ],
+      "type" : "object",
       "writes" : "ChatMessage"
     },
     "FilePreview" : {
+      "additionalProperties" : false,
       "description" : "One file drawn by its media type: text and Markdown through Prose, CSV as a table of its first rows, PNG and JPEG as an image, PDF in a sandboxed frame, HTML and SVG as text; above maxBytes it says too large to preview and offers Download.",
       "element" : "agentspaces-file-preview",
       "entry" : "https://badmonkey.ai/agentspaces/a2ui/v1/SharedFile",
       "properties" : {
+        "accessibility" : {
+          "$ref" : "#/$defs/AccessibilityAttributes"
+        },
+        "catalogId" : {
+          "$ref" : "#/$defs/CatalogId"
+        },
+        "component" : {
+          "const" : "FilePreview"
+        },
         "csvRows" : {
           "default" : 500,
           "description" : "the rows of a CSV drawn",
@@ -127,23 +270,17 @@
           "type" : "integer"
         },
         "file" : {
-          "description" : "a literal file id, or {path} into the data model where a FileTree puts the person's choice",
-          "oneOf" : [ {
-            "type" : "string"
-          }, {
-            "properties" : {
-              "path" : {
-                "type" : "string"
-              }
-            },
-            "required" : [ "path" ],
-            "type" : "object"
-          } ]
+          "$ref" : "#/$defs/TextOrBinding",
+          "description" : "a literal file id, or {\"@path\": ...} into the data model where a FileTree puts the person's choice"
         },
         "files" : {
           "default" : "/files",
           "description" : "the path of the SharedFile rows the file is found in",
           "type" : "string"
+        },
+        "id" : {
+          "$ref" : "#/$defs/ComponentId",
+          "description" : "the component's id, unique on its surface"
         },
         "kinds" : {
           "description" : "the media types drawn; every other draws as text when it is text, else offers Download",
@@ -158,26 +295,42 @@
           "maximum" : 16777216,
           "minimum" : 1,
           "type" : "integer"
+        },
+        "metadata" : {
+          "$ref" : "#/$defs/ComponentMetadata"
         }
       },
       "reads" : "/files",
+      "required" : [ "component" ],
+      "type" : "object",
       "writes" : "nothing"
     },
     "FileShare" : {
+      "additionalProperties" : false,
       "description" : "upload to the content swarm, list, download, share; an alias of FileTree through 0.6.x, drawn by it as a flat list",
       "element" : "agentspaces-file-share",
       "entry" : "https://badmonkey.ai/agentspaces/a2ui/v1/SharedFile",
       "properties" : {
         "accept" : {
-          "description" : "the media types and extensions a drop takes, such as .json or text/*; empty takes every file",
-          "items" : {
-            "type" : "string"
-          },
-          "type" : "array"
+          "$ref" : "#/$defs/Accept",
+          "description" : "the media types and extensions a drop takes, such as .json or text/*; empty takes every file"
+        },
+        "accessibility" : {
+          "$ref" : "#/$defs/AccessibilityAttributes"
         },
         "attest" : {
           "description" : "a statement the person ticks before a drop; its words travel with each upload as the lawful basis",
           "type" : "string"
+        },
+        "catalogId" : {
+          "$ref" : "#/$defs/CatalogId"
+        },
+        "component" : {
+          "const" : "FileShare"
+        },
+        "id" : {
+          "$ref" : "#/$defs/ComponentId",
+          "description" : "the component's id, unique on its surface"
         },
         "label" : {
           "description" : "the words on the drop zone",
@@ -186,6 +339,9 @@
         "maxBytes" : {
           "description" : "the largest file, shown as a hint and checked on the page; the feed's own cap decides",
           "type" : "integer"
+        },
+        "metadata" : {
+          "$ref" : "#/$defs/ComponentMetadata"
         },
         "multiple" : {
           "description" : "several files in one drop (true)",
@@ -197,19 +353,22 @@
         }
       },
       "reads" : "/files",
+      "required" : [ "component" ],
+      "type" : "object",
       "writes" : "an upload"
     },
     "FileTree" : {
+      "additionalProperties" : false,
       "description" : "Files as a tree (the WAI-ARIA Tree View pattern): folders from SharedFile.path, expand and collapse, a badge per file (an agent working on it, written by an agent, new or changed since this person looked), upload by drop or by a button, download, and a context menu with Ask about, Download, Share, Rename and Remove; Share, Rename and Remove are actions the host applies.",
       "element" : "agentspaces-file-tree",
       "entry" : "https://badmonkey.ai/agentspaces/a2ui/v1/SharedFile",
       "properties" : {
         "accept" : {
-          "description" : "the media types and extensions an upload takes; empty takes every file",
-          "items" : {
-            "type" : "string"
-          },
-          "type" : "array"
+          "$ref" : "#/$defs/Accept",
+          "description" : "the media types and extensions an upload takes; empty takes every file"
+        },
+        "accessibility" : {
+          "$ref" : "#/$defs/AccessibilityAttributes"
         },
         "actions" : {
           "description" : "the items of a file's context menu",
@@ -232,14 +391,24 @@
           },
           "type" : "array"
         },
+        "catalogId" : {
+          "$ref" : "#/$defs/CatalogId"
+        },
         "chat" : {
-          "description" : "the id of a Chat that Ask about attaches a file to",
-          "type" : "string"
+          "$ref" : "#/$defs/ComponentId",
+          "description" : "the id of a Chat that Ask about attaches a file to"
+        },
+        "component" : {
+          "const" : "FileTree"
         },
         "flat" : {
           "default" : false,
           "description" : "a flat list by name, as FileShare draws",
           "type" : "boolean"
+        },
+        "id" : {
+          "$ref" : "#/$defs/ComponentId",
+          "description" : "the component's id, unique on its surface"
         },
         "label" : {
           "default" : "Files",
@@ -250,9 +419,12 @@
           "description" : "the largest upload, checked on the page; the feed's own cap decides",
           "type" : "integer"
         },
+        "metadata" : {
+          "$ref" : "#/$defs/ComponentMetadata"
+        },
         "preview" : {
-          "description" : "the id of a FilePreview a file opens in when chosen",
-          "type" : "string"
+          "$ref" : "#/$defs/ComponentId",
+          "description" : "the id of a FilePreview a file opens in when chosen"
         },
         "reads" : {
           "default" : "/files",
@@ -270,23 +442,51 @@
         }
       },
       "reads" : "/files",
+      "required" : [ "component" ],
+      "type" : "object",
       "writes" : "an upload, or a file action"
     },
     "TimelineStrip" : {
+      "additionalProperties" : false,
       "description" : "the request timeline",
       "element" : "agentspaces-timeline-strip",
       "entry" : "",
       "properties" : {
+        "accessibility" : {
+          "$ref" : "#/$defs/AccessibilityAttributes"
+        },
+        "catalogId" : {
+          "$ref" : "#/$defs/CatalogId"
+        },
+        "component" : {
+          "const" : "TimelineStrip"
+        },
         "events" : {
           "description" : "the events shown when the data model has none",
           "type" : "array"
+        },
+        "id" : {
+          "$ref" : "#/$defs/ComponentId",
+          "description" : "the component's id, unique on its surface"
+        },
+        "metadata" : {
+          "$ref" : "#/$defs/ComponentMetadata"
         }
       },
       "reads" : "/events",
+      "required" : [ "component" ],
+      "type" : "object",
       "writes" : "nothing"
     }
   },
   "description" : "The raw widgets of an application over a group's entries (https://badmonkey.ai/agentspaces/a2ui/v1/). Each component reads a list from the surface's data model and writes an entry back through the host's callbacks, with no dependency on a platform record; the A2UI basic catalog and agentspaces-viz are assumed beside it, so a page puts a TitleBar over a Split of its tree, its preview and its chat.",
-  "title" : "AgentSpaces widgets catalog",
-  "version" : "1"
+  "metadata" : {
+    "extensions" : {
+      "agentspaces" : {
+        "version" : "1"
+      }
+    }
+  },
+  "protocolVersion" : "1.0",
+  "title" : "AgentSpaces widgets catalog"
 }

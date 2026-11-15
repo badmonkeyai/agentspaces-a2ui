@@ -1,31 +1,1536 @@
 {
-  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$schema": "https://a2ui.org/specification/v1_0/catalog_definition.json",
+  "protocolVersion": "1.0",
   "catalogId": "agentspaces-viz",
   "title": "AgentSpaces visualisation catalog",
   "description": "The components people look at in a published application: charts by the dataviz method, tables, maps, graphs, timelines, reports, notifications, forms, and stat tiles, and the frame around them (a title bar, menus, panel splits). An agent names series and paths; the renderer draws with the host's look and feel; nothing executes.",
-  "version": "1",
-  "rules": {
-    "charts": "the dataviz method: categorical hues in fixed order and never cycled; one hue for magnitude; two hues and a neutral midpoint for polarity; the status palette reserved; a legend for two series or more and direct labels for four or fewer; a hover layer; a table view beside every chart",
-    "noCode": "a component carries data paths, names, and tokens; no script, no URL loads, no markup"
+  "instructions": "charts: the dataviz method: categorical hues in fixed order and never cycled; one hue for magnitude; two hues and a neutral midpoint for polarity; the status palette reserved; a legend for two series or more and direct labels for four or fewer; a hover layer; a table view beside every chart. noCode: a component carries data paths, names, and tokens; no script, no URL loads, no markup.",
+  "metadata": {
+    "extensions": {
+      "agentspaces": {
+        "version": "1",
+        "rules": {
+          "charts": "the dataviz method: categorical hues in fixed order and never cycled; one hue for magnitude; two hues and a neutral midpoint for polarity; the status palette reserved; a legend for two series or more and direct labels for four or fewer; a hover layer; a table view beside every chart",
+          "noCode": "a component carries data paths, names, and tokens; no script, no URL loads, no markup"
+        }
+      }
+    }
   },
   "components": {
-    "Chart": {"description": "One chart of one kind over series bound to the data model; hues in fixed order from the look and feel; a legend for two series or more; a table view beside it.", "properties": {"kind": {"enum": ["bar", "line", "area", "stat", "sparkline", "heatmap"]}, "series": {"type": "array", "items": {"type": "object", "properties": {"name": {"type": "string"}, "path": {"type": "string"}, "color": {"type": "string", "description": "a token name, never a colour"}}, "required": ["name", "path"]}, "maxItems": 8}, "x": {"type": "string"}, "y": {"type": "string"}, "unit": {"type": "string"}, "title": {"type": "string"}, "legend": {"enum": ["auto", "always", "never"], "default": "auto"}, "table": {"type": "boolean", "default": true}}, "required": ["kind", "series"]},
-    "DataTable": {"description": "A virtualised table over rows bound to the data model, with sort, filter, paging, and a row action.", "properties": {"columns": {"type": "array", "items": {"type": "object", "properties": {"key": {"type": "string"}, "title": {"type": "string"}, "format": {"type": "string"}, "width": {"type": "integer"}}, "required": ["key"]}}, "rows": {"type": "string"}, "sort": {"type": "string"}, "filter": {"type": "boolean", "default": true}, "pageSize": {"type": "integer", "default": 50}, "rowAction": {"type": "string"}}, "required": ["columns", "rows"]},
-    "Map": {"description": "A map of layers over the surface's data: icons that move as a key's position changes, tracks, areas (geofences), heat, GeoJSON, markers; alert boxes near their keys; a legend and a table view; a marker action and an alert action.", "properties": {"layers": {"type": "array", "items": {"type": "object", "properties": {"kind": {"enum": ["icons", "markers", "tracks", "areas", "heat", "geojson", "alerts"]}, "path": {"type": "string", "description": "the rows of the layer in the data model (lat and lon per row; areas carry a polygon or a geometry; alerts carry a key, a severity, a title)"}, "key": {"type": "string", "description": "the field that names a key (a unit); an icons layer keeps one icon per key, a tracks layer one path per key"}, "label": {"type": "string", "description": "the field drawn beside an icon"}, "icon": {"enum": ["dot", "pin", "truck", "van", "car", "plane", "ship", "person", "arrow"], "default": "dot"}, "size": {"type": "number", "description": "the icon's size in pixels", "default": 28}, "heading": {"type": "string", "description": "the field with a bearing in degrees; without it the bearing is from the previous position"}, "timeField": {"type": "string", "default": "at"}, "trail": {"type": "integer", "description": "a tracks layer draws the last trail positions per key", "default": 50}, "color": {"type": "string", "description": "a hue of the look's categorical set by index (0 to 7), or empty for the layer's turn"}}, "required": ["kind", "path"]}}, "center": {"type": "array", "items": {"type": "number"}, "minItems": 2, "maxItems": 2}, "zoom": {"type": "number"}, "fit": {"enum": ["auto", "none"], "default": "auto"}, "transition": {"type": "integer", "description": "milliseconds an icon takes from its previous to its newest position", "default": 1000}, "follow": {"type": "string", "description": "a path to the key the map keeps centred, or empty"}, "highlight": {"type": "string", "description": "a path to the keys drawn highlighted (a ring and a larger icon)"}, "legend": {"type": "boolean", "default": true}, "table": {"type": "boolean", "description": "a table view of the rows of each layer, the dataviz rule", "default": true}, "markerAction": {"type": "string", "description": "dispatched with the row when an icon or a marker is clicked"}, "alertAction": {"type": "string", "description": "dispatched with the alert's id and key from an alert box's Acknowledge"}}, "required": ["layers"]},
-    "Graph": {"description": "Nodes and edges bound to the data model, laid out in columns, by force, or as a tree; a node action.", "properties": {"nodes": {"type": "string"}, "edges": {"type": "string"}, "layout": {"enum": ["columns", "force", "tree"], "default": "columns"}, "columns": {"type": "array", "items": {"type": "object", "properties": {"key": {"type": "string"}, "label": {"type": "string"}}}}, "nodeAction": {"type": "string"}}, "required": ["nodes", "edges"]},
-    "Timeline": {"description": "Events on lanes over time.", "properties": {"events": {"type": "string"}, "lanes": {"type": "string"}, "from": {"type": "string"}, "to": {"type": "string"}}, "required": ["events"]},
-    "Report": {"description": "A document of sections (text as Markdown, charts, tables, graphs, maps) exported as Markdown or printed to PDF.", "properties": {"title": {"type": "string"}, "sections": {"type": "array", "items": {"type": "object", "properties": {"heading": {"type": "string"}, "kind": {"enum": ["text", "chart", "table", "graph", "map"]}, "text": {"type": "string"}, "component": {"type": "object"}}, "required": ["kind"]}}, "export": {"type": "array", "items": {"enum": ["markdown", "pdf"]}, "default": ["markdown", "pdf"]}}, "required": ["title", "sections"]},
-    "Notification": {"description": "Alerts or incidents bound to the data model, grouped, with acknowledge and route actions.", "properties": {"items": {"type": "string"}, "ackAction": {"type": "string"}, "routeAction": {"type": "string"}, "groupBy": {"enum": ["incident", "group", "none"], "default": "incident"}, "detail": {"type": "string", "description": "the item field shown as a second line under the title, none by default"}, "routeLabel": {"type": "string", "description": "the route button's label", "default": "Route"}}, "required": ["items", "ackAction"]},
-    "Form": {"description": "A form from a schema fragment of the data catalog, submitted as an action.", "properties": {"fragment": {"type": "string", "description": "a type IRI"}, "fields": {"type": "array", "items": {"type": "string"}}, "submitAction": {"type": "string"}}, "required": ["fragment", "submitAction"]},
-    "Stat": {"description": "One figure with a label, a unit, a delta, and a status.", "properties": {"label": {"type": "string"}, "value": {"type": "string"}, "unit": {"type": "string"}, "delta": {"type": "string"}, "status": {"type": "string"}}, "required": ["label", "value"]},
-    "Window": {"description": "A panel with a header: dragged by the header, minimized to its bar and restored from it; one child component.", "properties": {"title": {"type": "string"}, "child": {"type": "string", "description": "the id of the one child"}, "placement": {"enum": ["flow", "top-left", "top-right", "bottom-left", "bottom-right"], "default": "flow"}, "minimized": {"type": "boolean", "default": false}, "width": {"type": "integer", "description": "pixels; 0 for the content's width", "default": 0}, "actions": {"type": "array", "description": "buttons in the window's header, in the shape of TitleBar.actions", "items": {"type": "object", "description": "a button in a header: an id, its words, an icon name, and the action it dispatches", "properties": {"id": {"type": "string"}, "label": {"type": "string"}, "icon": {"type": "string"}, "action": {"type": "object", "properties": {"name": {"type": "string"}, "context": {"type": "object"}}, "required": ["name"]}}, "required": ["id", "label", "action"]}, "maxItems": 4}}, "required": ["title", "child"]},
-    "Conversation": {"description": "A chat with an agent: the lines of one key from the data model, newest last; a line typed is written as a ChatMessage through the page's write action. An alias of the widgets catalog's Chat through 0.6.x, drawn by it.", "properties": {"lines": {"type": "string", "description": "a path to the ChatMessage rows"}, "key": {"type": "string", "description": "the thread; lines of other keys are not shown"}, "agent": {"type": "string", "description": "the agent that answers, shown as the counterpart"}, "placeholder": {"type": "string", "default": "Ask the agent"}, "writeAction": {"type": "string", "description": "the action a sent line dispatches with {type: ChatMessage, entry}", "default": "write"}}, "required": ["lines", "key"]},
-    "Notice": {"description": "A status box: a severity word with its icon and colour (never colour alone), a title, a text; from literals or paths.", "properties": {"status": {"enum": ["info", "good", "warning", "serious", "critical"], "default": "info"}, "title": {"type": "string"}, "text": {"type": "string", "description": "the text, or a path to it"}, "dismissAction": {"type": "string"}, "statusPath": {"type": "string", "description": "a path to the status word, which wins over status when it holds one of the five words"}}, "required": ["title"]},
-    "Toolbar": {"description": "A row of actions: each a label and the action it dispatches, with an optional context.", "properties": {"actions": {"type": "array", "items": {"type": "object", "properties": {"label": {"type": "string"}, "action": {"type": "string"}, "primary": {"type": "boolean"}, "context": {"type": "object"}}, "required": ["label", "action"]}}, "title": {"type": "string"}, "menu": {"type": "string", "description": "the id of a Menu drawn as the toolbar's overflow"}}, "required": ["actions"]},
-    "KeyValue": {"description": "Facts as label and value pairs: the items given (a value or a path each), or every field of the object at a path.", "properties": {"items": {"type": "array", "items": {"type": "object", "properties": {"label": {"type": "string"}, "value": {"type": "string", "description": "a value, or a path to it"}}, "required": ["label"]}}, "path": {"type": "string", "description": "an object whose fields are the pairs"}, "title": {"type": "string"}}, "required": []},
-    "Prose": {"description": "Markdown text as safe HTML (no raw HTML, http links only): the text, or a path to it.", "properties": {"text": {"type": "string"}}, "required": ["text"]},
-    "TitleBar": {"description": "The page's one bar: the app's name and icon, a subtitle, a status read from the WorkingOn rows at a path (any row working shows the working label, failed the failed label, input-required the input label, else the idle label), the actions a design declares, and a Menu by id; the page chrome folds its own title into it.", "properties": {"title": {"description": "a literal, or {path} into the data model", "oneOf": [{"type": "string"}, {"type": "object", "properties": {"path": {"type": "string"}}, "required": ["path"]}]}, "subtitle": {"type": "string"}, "icon": {"type": "string", "description": "an icon name from the renderer's set, such as briefcase"}, "status": {"type": "object", "properties": {"from": {"type": "string", "description": "a path to WorkingOn rows"}, "labels": {"type": "object", "properties": {"working": {"type": "string", "default": "Working"}, "idle": {"type": "string", "default": "Ready"}, "input": {"type": "string", "default": "Needs your input"}, "failed": {"type": "string", "default": "The agent stopped"}}}}, "required": ["from"]}, "actions": {"type": "array", "items": {"type": "object", "description": "a button in a header: an id, its words, an icon name, and the action it dispatches", "properties": {"id": {"type": "string"}, "label": {"type": "string"}, "icon": {"type": "string"}, "action": {"type": "object", "properties": {"name": {"type": "string"}, "context": {"type": "object"}}, "required": ["name"]}}, "required": ["id", "label", "action"]}, "maxItems": 6}, "menu": {"type": "string", "description": "the id of a Menu drawn as the bar's overflow"}}, "required": ["title"]},
-    "Menu": {"description": "A menu (the WAI-ARIA Menu Button and Menu patterns) behind a menu button, an overflow, or a context menu on a row or a file: items with groups, disabled and checked items, shortcuts, and one level of submenu; an item dispatches its action.", "properties": {"trigger": {"type": "object", "properties": {"kind": {"enum": ["button", "overflow", "context"], "default": "button"}, "label": {"type": "string", "description": "the trigger's words, or its accessible name for an overflow"}}}, "items": {"description": "the items, or a path to them in the data model", "oneOf": [{"type": "array", "items": {"type": "object", "properties": {"id": {"type": "string"}, "label": {"type": "string"}, "shortcut": {"type": "string", "description": "the keys shown beside the item, such as Ctrl+Shift+O; the menu answers them while it is open"}, "group": {"type": "string", "description": "items of one group sit together, a separator between groups"}, "disabled": {"type": "boolean", "default": false}, "checked": {"description": "true or false, or {path} into the data model", "oneOf": [{"type": "string"}, {"type": "object", "properties": {"path": {"type": "string"}}, "required": ["path"]}]}, "action": {"type": "object", "properties": {"name": {"type": "string"}, "context": {"type": "object"}}, "required": ["name"]}, "items": {"type": "array", "description": "a submenu, one level deep: items with no items of their own", "items": {"type": "object"}}}, "required": ["id", "label"]}}, {"type": "string"}]}}, "required": ["items"]},
-    "Split": {"description": "Two or three panes side by side or one over another, with a separator a person drags or moves by keyboard (the WAI-ARIA Window Splitter pattern), panes that collapse to a rail, sizes kept per person in the browser, and panes that stack below a width.", "properties": {"orientation": {"enum": ["horizontal", "vertical"], "default": "horizontal"}, "persist": {"type": "string", "description": "the key a browser keeps this split's sizes under; empty keeps none"}, "stackBelow": {"type": "integer", "description": "below this width in pixels the panes stack; 0 never", "default": 0}, "panes": {"type": "array", "items": {"type": "object", "properties": {"id": {"type": "string"}, "child": {"type": "string", "description": "the id of the pane's one child"}, "size": {"type": "number", "description": "the share of the split, 0 to 1"}, "min": {"type": "integer", "description": "pixels the pane keeps before it collapses or stops", "default": 0}, "collapsible": {"type": "boolean", "default": false}, "label": {"type": "string", "description": "the pane's name, on its rail when collapsed and for a screen reader"}}, "required": ["id", "size"]}, "minItems": 2, "maxItems": 3}}, "required": ["panes"]}
+    "Chart": {
+      "description": "One chart of one kind over series bound to the data model; hues in fixed order from the look and feel; a legend for two series or more; a table view beside it.",
+      "type": "object",
+      "properties": {
+        "component": {
+          "const": "Chart"
+        },
+        "kind": {
+          "enum": [
+            "bar",
+            "line",
+            "area",
+            "stat",
+            "sparkline",
+            "heatmap"
+          ]
+        },
+        "series": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "name": {
+                "type": "string"
+              },
+              "path": {
+                "type": "string"
+              },
+              "color": {
+                "type": "string",
+                "description": "a token name, never a colour"
+              }
+            },
+            "required": [
+              "name",
+              "path"
+            ]
+          },
+          "maxItems": 8
+        },
+        "x": {
+          "type": "string"
+        },
+        "y": {
+          "type": "string"
+        },
+        "unit": {
+          "type": "string"
+        },
+        "title": {
+          "type": "string"
+        },
+        "legend": {
+          "enum": [
+            "auto",
+            "always",
+            "never"
+          ],
+          "default": "auto"
+        },
+        "table": {
+          "type": "boolean",
+          "default": true
+        },
+        "id": {
+          "$ref": "#/$defs/ComponentId",
+          "description": "the component's id, unique on its surface"
+        },
+        "catalogId": {
+          "$ref": "#/$defs/CatalogId"
+        },
+        "accessibility": {
+          "$ref": "#/$defs/AccessibilityAttributes"
+        },
+        "metadata": {
+          "$ref": "#/$defs/ComponentMetadata"
+        }
+      },
+      "required": [
+        "component",
+        "kind",
+        "series"
+      ],
+      "additionalProperties": false
+    },
+    "Visualize": {
+      "description": "A chart of a bound table by a small spec: a mark (bar, column, line, area, scatter, or table), the x column, one y column or several, a column whose values split the series, an aggregate per x, and a sort. It follows the dataviz method: one value axis, a legend for two series or more, direct labels for four or fewer, hues from the look in fixed order, a ninth series folded into Other, a hover tooltip on every mark and a crosshair on a line or an area, and a table view. A spec that names a column the table lacks says so.",
+      "type": "object",
+      "properties": {
+        "component": {
+          "const": "Visualize"
+        },
+        "rows": {
+          "type": "string",
+          "description": "the table in the data model: a list of rows"
+        },
+        "mark": {
+          "enum": [
+            "bar",
+            "column",
+            "line",
+            "area",
+            "scatter",
+            "table"
+          ],
+          "default": "column"
+        },
+        "x": {
+          "type": "string",
+          "description": "the column along the categories (or the x axis of a scatter)"
+        },
+        "y": {
+          "oneOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            }
+          ],
+          "description": "the column of values, or a list of columns, one series each"
+        },
+        "color": {
+          "type": "string",
+          "description": "a column whose values split the rows into series"
+        },
+        "aggregate": {
+          "enum": [
+            "sum",
+            "mean",
+            "count",
+            "none"
+          ],
+          "default": "none"
+        },
+        "sort": {
+          "type": "string",
+          "description": "x, y or a column; a leading - sorts descending"
+        },
+        "title": {
+          "type": "string"
+        },
+        "unit": {
+          "type": "string"
+        },
+        "table": {
+          "enum": [
+            "toggle",
+            "below"
+          ],
+          "default": "toggle"
+        },
+        "id": {
+          "$ref": "#/$defs/ComponentId",
+          "description": "the component's id, unique on its surface"
+        },
+        "catalogId": {
+          "$ref": "#/$defs/CatalogId"
+        },
+        "accessibility": {
+          "$ref": "#/$defs/AccessibilityAttributes"
+        },
+        "metadata": {
+          "$ref": "#/$defs/ComponentMetadata"
+        }
+      },
+      "required": [
+        "component",
+        "rows",
+        "x"
+      ],
+      "additionalProperties": false
+    },
+    "DataTable": {
+      "description": "A virtualised table over rows bound to the data model, with sort, filter, paging, and a row action.",
+      "type": "object",
+      "properties": {
+        "component": {
+          "const": "DataTable"
+        },
+        "columns": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "key": {
+                "type": "string"
+              },
+              "title": {
+                "type": "string"
+              },
+              "format": {
+                "type": "string"
+              },
+              "width": {
+                "type": "integer"
+              }
+            },
+            "required": [
+              "key"
+            ]
+          }
+        },
+        "rows": {
+          "type": "string"
+        },
+        "sort": {
+          "type": "string"
+        },
+        "filter": {
+          "type": "boolean",
+          "default": true
+        },
+        "pageSize": {
+          "type": "integer",
+          "default": 50
+        },
+        "rowAction": {
+          "type": "string"
+        },
+        "id": {
+          "$ref": "#/$defs/ComponentId",
+          "description": "the component's id, unique on its surface"
+        },
+        "catalogId": {
+          "$ref": "#/$defs/CatalogId"
+        },
+        "accessibility": {
+          "$ref": "#/$defs/AccessibilityAttributes"
+        },
+        "metadata": {
+          "$ref": "#/$defs/ComponentMetadata"
+        }
+      },
+      "required": [
+        "component",
+        "columns",
+        "rows"
+      ],
+      "additionalProperties": false
+    },
+    "Map": {
+      "description": "A map of layers over the surface's data: icons that move as a key's position changes, tracks, areas (geofences), heat, GeoJSON, markers; alert boxes near their keys; a legend and a table view; a marker action and an alert action.",
+      "type": "object",
+      "properties": {
+        "component": {
+          "const": "Map"
+        },
+        "layers": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "kind": {
+                "enum": [
+                  "icons",
+                  "markers",
+                  "tracks",
+                  "areas",
+                  "heat",
+                  "geojson",
+                  "alerts"
+                ]
+              },
+              "path": {
+                "type": "string",
+                "description": "the rows of the layer in the data model (lat and lon per row; areas carry a polygon or a geometry; alerts carry a key, a severity, a title)"
+              },
+              "key": {
+                "type": "string",
+                "description": "the field that names a key (a unit); an icons layer keeps one icon per key, a tracks layer one path per key"
+              },
+              "label": {
+                "type": "string",
+                "description": "the field drawn beside an icon"
+              },
+              "icon": {
+                "enum": [
+                  "dot",
+                  "pin",
+                  "truck",
+                  "van",
+                  "car",
+                  "plane",
+                  "ship",
+                  "person",
+                  "arrow"
+                ],
+                "default": "dot"
+              },
+              "size": {
+                "type": "number",
+                "description": "the icon's size in pixels",
+                "default": 28
+              },
+              "heading": {
+                "type": "string",
+                "description": "the field with a bearing in degrees; without it the bearing is from the previous position"
+              },
+              "timeField": {
+                "type": "string",
+                "default": "at"
+              },
+              "trail": {
+                "type": "integer",
+                "description": "a tracks layer draws the last trail positions per key",
+                "default": 50
+              },
+              "color": {
+                "type": "string",
+                "description": "a hue of the look's categorical set by index (0 to 7), or empty for the layer's turn"
+              }
+            },
+            "required": [
+              "kind",
+              "path"
+            ]
+          }
+        },
+        "center": {
+          "type": "array",
+          "items": {
+            "type": "number"
+          },
+          "minItems": 2,
+          "maxItems": 2
+        },
+        "zoom": {
+          "type": "number"
+        },
+        "fit": {
+          "enum": [
+            "auto",
+            "none"
+          ],
+          "default": "auto"
+        },
+        "transition": {
+          "type": "integer",
+          "description": "milliseconds an icon takes from its previous to its newest position",
+          "default": 1000
+        },
+        "follow": {
+          "type": "string",
+          "description": "a path to the key the map keeps centred, or empty"
+        },
+        "highlight": {
+          "type": "string",
+          "description": "a path to the keys drawn highlighted (a ring and a larger icon)"
+        },
+        "legend": {
+          "type": "boolean",
+          "default": true
+        },
+        "table": {
+          "type": "boolean",
+          "description": "a table view of the rows of each layer, the dataviz rule",
+          "default": true
+        },
+        "markerAction": {
+          "type": "string",
+          "description": "dispatched with the row when an icon or a marker is clicked"
+        },
+        "alertAction": {
+          "type": "string",
+          "description": "dispatched with the alert's id and key from an alert box's Acknowledge"
+        },
+        "id": {
+          "$ref": "#/$defs/ComponentId",
+          "description": "the component's id, unique on its surface"
+        },
+        "catalogId": {
+          "$ref": "#/$defs/CatalogId"
+        },
+        "accessibility": {
+          "$ref": "#/$defs/AccessibilityAttributes"
+        },
+        "metadata": {
+          "$ref": "#/$defs/ComponentMetadata"
+        }
+      },
+      "required": [
+        "component",
+        "layers"
+      ],
+      "additionalProperties": false
+    },
+    "Graph": {
+      "description": "Nodes and edges bound to the data model, laid out in columns, by force, or as a tree; a node action.",
+      "type": "object",
+      "properties": {
+        "component": {
+          "const": "Graph"
+        },
+        "nodes": {
+          "type": "string"
+        },
+        "edges": {
+          "type": "string"
+        },
+        "layout": {
+          "enum": [
+            "columns",
+            "force",
+            "tree"
+          ],
+          "default": "columns"
+        },
+        "columns": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "key": {
+                "type": "string"
+              },
+              "label": {
+                "type": "string"
+              }
+            }
+          }
+        },
+        "nodeAction": {
+          "type": "string"
+        },
+        "id": {
+          "$ref": "#/$defs/ComponentId",
+          "description": "the component's id, unique on its surface"
+        },
+        "catalogId": {
+          "$ref": "#/$defs/CatalogId"
+        },
+        "accessibility": {
+          "$ref": "#/$defs/AccessibilityAttributes"
+        },
+        "metadata": {
+          "$ref": "#/$defs/ComponentMetadata"
+        }
+      },
+      "required": [
+        "component",
+        "nodes",
+        "edges"
+      ],
+      "additionalProperties": false
+    },
+    "GraphView": {
+      "description": "A graph of nodes and edges: a nodes table (id, label, kind) and an edges table (source, target, rel), or GeoFeatures with their links, laid out by force, as a tree, or in layers. A person pans, zooms, drags a node, and clicks one to select it; a node whose id is a GeoFeature's selects that feature on the map. Nodes are coloured by kind from the look in fixed order, with a legend.",
+      "type": "object",
+      "properties": {
+        "component": {
+          "const": "GraphView"
+        },
+        "nodes": {
+          "type": "string",
+          "description": "the nodes table in the data model: rows with id, label and kind"
+        },
+        "edges": {
+          "type": "string",
+          "description": "the edges table: rows with source, target and rel"
+        },
+        "features": {
+          "type": "string",
+          "description": "GeoFeatures whose links are the edges, instead of the two tables"
+        },
+        "layout": {
+          "enum": [
+            "force",
+            "tree",
+            "layered"
+          ],
+          "default": "force"
+        },
+        "map": {
+          "$ref": "#/$defs/ComponentId",
+          "description": "the id of a GeoMap on this surface a node selects on; in a GeoLayout, the layout's map"
+        },
+        "selectAction": {
+          "type": "string",
+          "description": "dispatched with the node's id and kind when a person selects it"
+        },
+        "title": {
+          "type": "string"
+        },
+        "id": {
+          "$ref": "#/$defs/ComponentId",
+          "description": "the component's id, unique on its surface"
+        },
+        "catalogId": {
+          "$ref": "#/$defs/CatalogId"
+        },
+        "accessibility": {
+          "$ref": "#/$defs/AccessibilityAttributes"
+        },
+        "metadata": {
+          "$ref": "#/$defs/ComponentMetadata"
+        }
+      },
+      "required": [
+        "component"
+      ],
+      "additionalProperties": false
+    },
+    "Timeline": {
+      "description": "Events on lanes over time.",
+      "type": "object",
+      "properties": {
+        "component": {
+          "const": "Timeline"
+        },
+        "events": {
+          "type": "string"
+        },
+        "lanes": {
+          "type": "string"
+        },
+        "from": {
+          "type": "string"
+        },
+        "to": {
+          "type": "string"
+        },
+        "id": {
+          "$ref": "#/$defs/ComponentId",
+          "description": "the component's id, unique on its surface"
+        },
+        "catalogId": {
+          "$ref": "#/$defs/CatalogId"
+        },
+        "accessibility": {
+          "$ref": "#/$defs/AccessibilityAttributes"
+        },
+        "metadata": {
+          "$ref": "#/$defs/ComponentMetadata"
+        }
+      },
+      "required": [
+        "component",
+        "events"
+      ],
+      "additionalProperties": false
+    },
+    "Report": {
+      "description": "A document of sections (text as Markdown, charts, tables, graphs, maps) exported as Markdown or printed to PDF.",
+      "type": "object",
+      "properties": {
+        "component": {
+          "const": "Report"
+        },
+        "title": {
+          "type": "string"
+        },
+        "sections": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "heading": {
+                "type": "string"
+              },
+              "kind": {
+                "enum": [
+                  "text",
+                  "chart",
+                  "table",
+                  "graph",
+                  "map"
+                ]
+              },
+              "text": {
+                "type": "string"
+              },
+              "component": {
+                "type": "object"
+              }
+            },
+            "required": [
+              "kind"
+            ]
+          }
+        },
+        "export": {
+          "type": "array",
+          "items": {
+            "enum": [
+              "markdown",
+              "pdf"
+            ]
+          },
+          "default": [
+            "markdown",
+            "pdf"
+          ]
+        },
+        "id": {
+          "$ref": "#/$defs/ComponentId",
+          "description": "the component's id, unique on its surface"
+        },
+        "catalogId": {
+          "$ref": "#/$defs/CatalogId"
+        },
+        "accessibility": {
+          "$ref": "#/$defs/AccessibilityAttributes"
+        },
+        "metadata": {
+          "$ref": "#/$defs/ComponentMetadata"
+        }
+      },
+      "required": [
+        "component",
+        "title",
+        "sections"
+      ],
+      "additionalProperties": false
+    },
+    "Notification": {
+      "description": "Alerts or incidents bound to the data model, grouped, with acknowledge and route actions.",
+      "type": "object",
+      "properties": {
+        "component": {
+          "const": "Notification"
+        },
+        "items": {
+          "type": "string"
+        },
+        "ackAction": {
+          "type": "string"
+        },
+        "routeAction": {
+          "type": "string"
+        },
+        "groupBy": {
+          "enum": [
+            "incident",
+            "group",
+            "none"
+          ],
+          "default": "incident"
+        },
+        "detail": {
+          "type": "string",
+          "description": "the item field shown as a second line under the title, none by default"
+        },
+        "routeLabel": {
+          "type": "string",
+          "description": "the route button's label",
+          "default": "Route"
+        },
+        "id": {
+          "$ref": "#/$defs/ComponentId",
+          "description": "the component's id, unique on its surface"
+        },
+        "catalogId": {
+          "$ref": "#/$defs/CatalogId"
+        },
+        "accessibility": {
+          "$ref": "#/$defs/AccessibilityAttributes"
+        },
+        "metadata": {
+          "$ref": "#/$defs/ComponentMetadata"
+        }
+      },
+      "required": [
+        "component",
+        "items",
+        "ackAction"
+      ],
+      "additionalProperties": false
+    },
+    "Form": {
+      "description": "A form from a schema fragment of the data catalog, submitted as an action.",
+      "type": "object",
+      "properties": {
+        "component": {
+          "const": "Form"
+        },
+        "fragment": {
+          "type": "string",
+          "description": "a type IRI"
+        },
+        "fields": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "submitAction": {
+          "type": "string"
+        },
+        "id": {
+          "$ref": "#/$defs/ComponentId",
+          "description": "the component's id, unique on its surface"
+        },
+        "catalogId": {
+          "$ref": "#/$defs/CatalogId"
+        },
+        "accessibility": {
+          "$ref": "#/$defs/AccessibilityAttributes"
+        },
+        "metadata": {
+          "$ref": "#/$defs/ComponentMetadata"
+        }
+      },
+      "required": [
+        "component",
+        "fragment",
+        "submitAction"
+      ],
+      "additionalProperties": false
+    },
+    "Stat": {
+      "description": "One figure with a label, a unit, a delta, and a status.",
+      "type": "object",
+      "properties": {
+        "component": {
+          "const": "Stat"
+        },
+        "label": {
+          "type": "string"
+        },
+        "value": {
+          "type": "string"
+        },
+        "unit": {
+          "type": "string"
+        },
+        "delta": {
+          "type": "string"
+        },
+        "status": {
+          "type": "string"
+        },
+        "id": {
+          "$ref": "#/$defs/ComponentId",
+          "description": "the component's id, unique on its surface"
+        },
+        "catalogId": {
+          "$ref": "#/$defs/CatalogId"
+        },
+        "accessibility": {
+          "$ref": "#/$defs/AccessibilityAttributes"
+        },
+        "metadata": {
+          "$ref": "#/$defs/ComponentMetadata"
+        }
+      },
+      "required": [
+        "component",
+        "label",
+        "value"
+      ],
+      "additionalProperties": false
+    },
+    "Window": {
+      "description": "A panel with a header: dragged by the header, minimized to its bar and restored from it; one child component.",
+      "type": "object",
+      "properties": {
+        "component": {
+          "const": "Window"
+        },
+        "title": {
+          "type": "string"
+        },
+        "child": {
+          "$ref": "#/$defs/ComponentId",
+          "description": "the id of the one child"
+        },
+        "placement": {
+          "enum": [
+            "flow",
+            "top-left",
+            "top-right",
+            "bottom-left",
+            "bottom-right"
+          ],
+          "default": "flow"
+        },
+        "minimized": {
+          "type": "boolean",
+          "default": false
+        },
+        "width": {
+          "type": "integer",
+          "description": "pixels; 0 for the content's width",
+          "default": 0
+        },
+        "appearsWith": {
+          "type": "string",
+          "description": "a path into the data model; the window stays hidden until the path holds a row, then appears (data and visualizations arrive as the agents produce them)"
+        },
+        "actions": {
+          "type": "array",
+          "description": "buttons in the window's header, in the shape of TitleBar.actions",
+          "items": {
+            "$ref": "#/$defs/HeaderAction",
+            "description": "a button in a header: an id, its words, an icon name, and the action it dispatches"
+          },
+          "maxItems": 4
+        },
+        "id": {
+          "$ref": "#/$defs/ComponentId",
+          "description": "the component's id, unique on its surface"
+        },
+        "catalogId": {
+          "$ref": "#/$defs/CatalogId"
+        },
+        "accessibility": {
+          "$ref": "#/$defs/AccessibilityAttributes"
+        },
+        "metadata": {
+          "$ref": "#/$defs/ComponentMetadata"
+        }
+      },
+      "required": [
+        "component",
+        "title",
+        "child"
+      ],
+      "additionalProperties": false
+    },
+    "Conversation": {
+      "description": "A chat with an agent: the lines of one key from the data model, newest last; a line typed is written as a ChatMessage through the page's write action. An alias of the widgets catalog's Chat through 0.6.x, drawn by it.",
+      "type": "object",
+      "properties": {
+        "component": {
+          "const": "Conversation"
+        },
+        "lines": {
+          "type": "string",
+          "description": "a path to the ChatMessage rows"
+        },
+        "key": {
+          "type": "string",
+          "description": "the thread; lines of other keys are not shown"
+        },
+        "agent": {
+          "type": "string",
+          "description": "the agent that answers, shown as the counterpart"
+        },
+        "placeholder": {
+          "type": "string",
+          "default": "Ask the agent"
+        },
+        "writeAction": {
+          "type": "string",
+          "description": "the action a sent line dispatches with {type: ChatMessage, entry}",
+          "default": "write"
+        },
+        "id": {
+          "$ref": "#/$defs/ComponentId",
+          "description": "the component's id, unique on its surface"
+        },
+        "catalogId": {
+          "$ref": "#/$defs/CatalogId"
+        },
+        "accessibility": {
+          "$ref": "#/$defs/AccessibilityAttributes"
+        },
+        "metadata": {
+          "$ref": "#/$defs/ComponentMetadata"
+        }
+      },
+      "required": [
+        "component",
+        "lines",
+        "key"
+      ],
+      "additionalProperties": false
+    },
+    "Notice": {
+      "description": "A status box: a severity word with its icon and colour (never colour alone), a title, a text; from literals or paths.",
+      "type": "object",
+      "properties": {
+        "component": {
+          "const": "Notice"
+        },
+        "status": {
+          "enum": [
+            "info",
+            "good",
+            "warning",
+            "serious",
+            "critical"
+          ],
+          "default": "info"
+        },
+        "title": {
+          "type": "string"
+        },
+        "text": {
+          "type": "string",
+          "description": "the text, or a path to it"
+        },
+        "dismissAction": {
+          "type": "string"
+        },
+        "statusPath": {
+          "type": "string",
+          "description": "a path to the status word, which wins over status when it holds one of the five words"
+        },
+        "id": {
+          "$ref": "#/$defs/ComponentId",
+          "description": "the component's id, unique on its surface"
+        },
+        "catalogId": {
+          "$ref": "#/$defs/CatalogId"
+        },
+        "accessibility": {
+          "$ref": "#/$defs/AccessibilityAttributes"
+        },
+        "metadata": {
+          "$ref": "#/$defs/ComponentMetadata"
+        }
+      },
+      "required": [
+        "component",
+        "title"
+      ],
+      "additionalProperties": false
+    },
+    "Toolbar": {
+      "description": "A row of actions: each a label and the action it dispatches, with an optional context.",
+      "type": "object",
+      "properties": {
+        "component": {
+          "const": "Toolbar"
+        },
+        "actions": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "label": {
+                "type": "string"
+              },
+              "action": {
+                "type": "string"
+              },
+              "primary": {
+                "type": "boolean"
+              },
+              "context": {
+                "type": "object"
+              }
+            },
+            "required": [
+              "label",
+              "action"
+            ]
+          }
+        },
+        "title": {
+          "type": "string"
+        },
+        "menu": {
+          "$ref": "#/$defs/ComponentId",
+          "description": "the id of a Menu drawn as the toolbar's overflow"
+        },
+        "id": {
+          "$ref": "#/$defs/ComponentId",
+          "description": "the component's id, unique on its surface"
+        },
+        "catalogId": {
+          "$ref": "#/$defs/CatalogId"
+        },
+        "accessibility": {
+          "$ref": "#/$defs/AccessibilityAttributes"
+        },
+        "metadata": {
+          "$ref": "#/$defs/ComponentMetadata"
+        }
+      },
+      "required": [
+        "component",
+        "actions"
+      ],
+      "additionalProperties": false
+    },
+    "KeyValue": {
+      "description": "Facts as label and value pairs: the items given (a value or a path each), or every field of the object at a path.",
+      "type": "object",
+      "properties": {
+        "component": {
+          "const": "KeyValue"
+        },
+        "items": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "label": {
+                "type": "string"
+              },
+              "value": {
+                "type": "string",
+                "description": "a value, or a path to it"
+              }
+            },
+            "required": [
+              "label"
+            ]
+          }
+        },
+        "path": {
+          "type": "string",
+          "description": "an object whose fields are the pairs"
+        },
+        "title": {
+          "type": "string"
+        },
+        "id": {
+          "$ref": "#/$defs/ComponentId",
+          "description": "the component's id, unique on its surface"
+        },
+        "catalogId": {
+          "$ref": "#/$defs/CatalogId"
+        },
+        "accessibility": {
+          "$ref": "#/$defs/AccessibilityAttributes"
+        },
+        "metadata": {
+          "$ref": "#/$defs/ComponentMetadata"
+        }
+      },
+      "required": [
+        "component"
+      ],
+      "additionalProperties": false
+    },
+    "Prose": {
+      "description": "Markdown text as safe HTML (no raw HTML, http links only): the text, or a path to it.",
+      "type": "object",
+      "properties": {
+        "component": {
+          "const": "Prose"
+        },
+        "text": {
+          "type": "string"
+        },
+        "id": {
+          "$ref": "#/$defs/ComponentId",
+          "description": "the component's id, unique on its surface"
+        },
+        "catalogId": {
+          "$ref": "#/$defs/CatalogId"
+        },
+        "accessibility": {
+          "$ref": "#/$defs/AccessibilityAttributes"
+        },
+        "metadata": {
+          "$ref": "#/$defs/ComponentMetadata"
+        }
+      },
+      "required": [
+        "component",
+        "text"
+      ],
+      "additionalProperties": false
+    },
+    "TitleBar": {
+      "description": "The page's one bar: the app's name and icon, a subtitle, a status read from the WorkingOn rows at a path (any row working shows the working label, failed the failed label, input-required the input label, else the idle label), the actions a design declares, and a Menu by id; the page chrome folds its own title into it.",
+      "type": "object",
+      "properties": {
+        "component": {
+          "const": "TitleBar"
+        },
+        "title": {
+          "$ref": "#/$defs/TextOrBinding",
+          "description": "a literal, or {\"@path\": ...} into the data model"
+        },
+        "subtitle": {
+          "type": "string"
+        },
+        "icon": {
+          "type": "string",
+          "description": "an icon name from the renderer's set, such as briefcase"
+        },
+        "status": {
+          "type": "object",
+          "properties": {
+            "from": {
+              "type": "string",
+              "description": "a path to WorkingOn rows"
+            },
+            "labels": {
+              "type": "object",
+              "properties": {
+                "working": {
+                  "type": "string",
+                  "default": "Working"
+                },
+                "idle": {
+                  "type": "string",
+                  "default": "Ready"
+                },
+                "input": {
+                  "type": "string",
+                  "default": "Needs your input"
+                },
+                "failed": {
+                  "type": "string",
+                  "default": "The agent stopped"
+                }
+              }
+            }
+          },
+          "required": [
+            "from"
+          ]
+        },
+        "actions": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/HeaderAction",
+            "description": "a button in a header: an id, its words, an icon name, and the action it dispatches"
+          },
+          "maxItems": 6
+        },
+        "menu": {
+          "$ref": "#/$defs/ComponentId",
+          "description": "the id of a Menu drawn as the bar's overflow"
+        },
+        "id": {
+          "$ref": "#/$defs/ComponentId",
+          "description": "the component's id, unique on its surface"
+        },
+        "catalogId": {
+          "$ref": "#/$defs/CatalogId"
+        },
+        "accessibility": {
+          "$ref": "#/$defs/AccessibilityAttributes"
+        },
+        "metadata": {
+          "$ref": "#/$defs/ComponentMetadata"
+        }
+      },
+      "required": [
+        "component",
+        "title"
+      ],
+      "additionalProperties": false
+    },
+    "Menu": {
+      "description": "A menu (the WAI-ARIA Menu Button and Menu patterns) behind a menu button, an overflow, or a context menu on a row or a file: items with groups, disabled and checked items, shortcuts, and one level of submenu; an item dispatches its action.",
+      "type": "object",
+      "properties": {
+        "component": {
+          "const": "Menu"
+        },
+        "trigger": {
+          "type": "object",
+          "properties": {
+            "kind": {
+              "enum": [
+                "button",
+                "overflow",
+                "context"
+              ],
+              "default": "button"
+            },
+            "label": {
+              "type": "string",
+              "description": "the trigger's words, or its accessible name for an overflow"
+            }
+          }
+        },
+        "items": {
+          "description": "the items, or a path to them in the data model",
+          "oneOf": [
+            {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "id": {
+                    "type": "string"
+                  },
+                  "label": {
+                    "type": "string"
+                  },
+                  "shortcut": {
+                    "type": "string",
+                    "description": "the keys shown beside the item, such as Ctrl+Shift+O; the menu answers them while it is open"
+                  },
+                  "group": {
+                    "type": "string",
+                    "description": "items of one group sit together, a separator between groups"
+                  },
+                  "disabled": {
+                    "type": "boolean",
+                    "default": false
+                  },
+                  "checked": {
+                    "$ref": "#/$defs/TextOrBinding",
+                    "description": "true or false, or {\"@path\": ...} into the data model"
+                  },
+                  "action": {
+                    "$ref": "#/$defs/NamedAction"
+                  },
+                  "items": {
+                    "type": "array",
+                    "description": "a submenu, one level deep: items with no items of their own",
+                    "items": {
+                      "$ref": "#/$defs/MenuLeaf"
+                    }
+                  }
+                },
+                "required": [
+                  "id",
+                  "label"
+                ]
+              }
+            },
+            {
+              "type": "string"
+            }
+          ]
+        },
+        "id": {
+          "$ref": "#/$defs/ComponentId",
+          "description": "the component's id, unique on its surface"
+        },
+        "catalogId": {
+          "$ref": "#/$defs/CatalogId"
+        },
+        "accessibility": {
+          "$ref": "#/$defs/AccessibilityAttributes"
+        },
+        "metadata": {
+          "$ref": "#/$defs/ComponentMetadata"
+        }
+      },
+      "required": [
+        "component",
+        "items"
+      ],
+      "additionalProperties": false
+    },
+    "Split": {
+      "description": "Two or three panes side by side or one over another, with a separator a person drags or moves by keyboard (the WAI-ARIA Window Splitter pattern), panes that collapse to a rail, sizes kept per person in the browser, and panes that stack below a width.",
+      "type": "object",
+      "properties": {
+        "component": {
+          "const": "Split"
+        },
+        "orientation": {
+          "enum": [
+            "horizontal",
+            "vertical"
+          ],
+          "default": "horizontal"
+        },
+        "persist": {
+          "type": "string",
+          "description": "the key a browser keeps this split's sizes under; empty keeps none"
+        },
+        "stackBelow": {
+          "type": "integer",
+          "description": "below this width in pixels the panes stack; 0 never",
+          "default": 0
+        },
+        "panes": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string"
+              },
+              "child": {
+                "$ref": "#/$defs/ComponentId",
+                "description": "the id of the pane's one child"
+              },
+              "size": {
+                "type": "number",
+                "description": "the share of the split, 0 to 1"
+              },
+              "min": {
+                "type": "integer",
+                "description": "pixels the pane keeps before it collapses or stops",
+                "default": 0
+              },
+              "collapsible": {
+                "type": "boolean",
+                "default": false
+              },
+              "label": {
+                "type": "string",
+                "description": "the pane's name, on its rail when collapsed and for a screen reader"
+              }
+            },
+            "required": [
+              "id",
+              "size"
+            ]
+          },
+          "minItems": 2,
+          "maxItems": 3
+        },
+        "id": {
+          "$ref": "#/$defs/ComponentId",
+          "description": "the component's id, unique on its surface"
+        },
+        "catalogId": {
+          "$ref": "#/$defs/CatalogId"
+        },
+        "accessibility": {
+          "$ref": "#/$defs/AccessibilityAttributes"
+        },
+        "metadata": {
+          "$ref": "#/$defs/ComponentMetadata"
+        }
+      },
+      "required": [
+        "component",
+        "panes"
+      ],
+      "additionalProperties": false
+    }
+  },
+  "$defs": {
+    "anyComponent": {
+      "oneOf": [
+        {
+          "$ref": "#/components/Chart"
+        },
+        {
+          "$ref": "#/components/Visualize"
+        },
+        {
+          "$ref": "#/components/DataTable"
+        },
+        {
+          "$ref": "#/components/Map"
+        },
+        {
+          "$ref": "#/components/Graph"
+        },
+        {
+          "$ref": "#/components/GraphView"
+        },
+        {
+          "$ref": "#/components/Timeline"
+        },
+        {
+          "$ref": "#/components/Report"
+        },
+        {
+          "$ref": "#/components/Notification"
+        },
+        {
+          "$ref": "#/components/Form"
+        },
+        {
+          "$ref": "#/components/Stat"
+        },
+        {
+          "$ref": "#/components/Window"
+        },
+        {
+          "$ref": "#/components/Conversation"
+        },
+        {
+          "$ref": "#/components/Notice"
+        },
+        {
+          "$ref": "#/components/Toolbar"
+        },
+        {
+          "$ref": "#/components/KeyValue"
+        },
+        {
+          "$ref": "#/components/Prose"
+        },
+        {
+          "$ref": "#/components/TitleBar"
+        },
+        {
+          "$ref": "#/components/Menu"
+        },
+        {
+          "$ref": "#/components/Split"
+        }
+      ],
+      "discriminator": {
+        "propertyName": "component"
+      }
+    },
+    "anyFunction": {
+      "description": "This catalog declares no functions of its own; a surface calls the basic catalog's functions, so no function call validates against this catalog alone.",
+      "not": {}
+    },
+    "ComponentId": {
+      "type": "string",
+      "description": "The id of a component on the same surface (A2UI 1.0's ComponentId): a component's own id, or the id of the child, the menu or the map it names."
+    },
+    "CatalogId": {
+      "type": "string",
+      "description": "The catalog ID for this component, overriding any surface-level default catalogId (A2UI 1.0's ComponentCommon)."
+    },
+    "AccessibilityAttributes": {
+      "$ref": "https://a2ui.org/specification/v1_0/common_types.json#/$defs/AccessibilityAttributes",
+      "description": "A2UI 1.0's accessibility attributes: a label and a description for assistive technologies."
+    },
+    "ComponentMetadata": {
+      "type": "object",
+      "description": "Optional component-level metadata for vendor extensions (A2UI 1.0's ComponentCommon).",
+      "properties": {
+        "extensions": {
+          "$ref": "https://a2ui.org/specification/v1_0/common_types.json#/$defs/Extensions"
+        }
+      },
+      "additionalProperties": false
+    },
+    "DataBinding": {
+      "type": "object",
+      "description": "A2UI 1.0's data binding: a JSON pointer into the data model. v0.9.1's {\"path\": ...} is not one.",
+      "properties": {
+        "@path": {
+          "type": "string",
+          "description": "a JSON pointer into the data model"
+        }
+      },
+      "required": [
+        "@path"
+      ],
+      "additionalProperties": false
+    },
+    "TextOrBinding": {
+      "description": "a literal, or a DataBinding into the data model",
+      "oneOf": [
+        {
+          "type": "string"
+        },
+        {
+          "$ref": "#/$defs/DataBinding"
+        }
+      ]
+    },
+    "NamedAction": {
+      "type": "object",
+      "description": "the action a button or an item dispatches: its name and a context of literals",
+      "properties": {
+        "name": {
+          "type": "string"
+        },
+        "context": {
+          "type": "object"
+        }
+      },
+      "required": [
+        "name"
+      ]
+    },
+    "HeaderAction": {
+      "type": "object",
+      "description": "a button in a header: an id, its words, an icon name, and the action it dispatches",
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "label": {
+          "type": "string"
+        },
+        "icon": {
+          "type": "string"
+        },
+        "action": {
+          "$ref": "#/$defs/NamedAction"
+        }
+      },
+      "required": [
+        "id",
+        "label",
+        "action"
+      ]
+    },
+    "MenuLeaf": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "label": {
+          "type": "string"
+        },
+        "shortcut": {
+          "type": "string",
+          "description": "the keys shown beside the item, such as Ctrl+Shift+O; the menu answers them while it is open"
+        },
+        "group": {
+          "type": "string",
+          "description": "items of one group sit together, a separator between groups"
+        },
+        "disabled": {
+          "type": "boolean",
+          "default": false
+        },
+        "checked": {
+          "$ref": "#/$defs/TextOrBinding",
+          "description": "true or false, or {\"@path\": ...} into the data model"
+        },
+        "action": {
+          "$ref": "#/$defs/NamedAction"
+        }
+      },
+      "required": [
+        "id",
+        "label"
+      ],
+      "description": "a submenu item: an item with no items of its own"
+    }
   }
 }

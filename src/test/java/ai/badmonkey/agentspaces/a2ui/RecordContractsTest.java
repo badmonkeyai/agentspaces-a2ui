@@ -19,6 +19,7 @@ package ai.badmonkey.agentspaces.a2ui;
 
 import ai.badmonkey.agentspaces.a2ui.records.ChatMessage;
 import ai.badmonkey.agentspaces.a2ui.records.ChatProgress;
+import ai.badmonkey.agentspaces.a2ui.records.FunctionResponse;
 import ai.badmonkey.agentspaces.a2ui.records.SharedFile;
 import ai.badmonkey.agentspaces.a2ui.records.TaskStates;
 import ai.badmonkey.agentspaces.a2ui.records.WorkingOn;
@@ -95,7 +96,11 @@ class RecordContractsTest {
                         "since", R),
                 of(ChatProgress.class, Map.of("state", TaskStates.WORKING), "id", R, "key", R, "inReplyTo", R, "agent", R, "state", TaskStates.SUBMITTED,
                         "steps", List.of(), "at", R),
-                of(ChatProgress.Step.class, Map.of("kind", ChatProgress.Step.READ), "label", "", "kind", R, "ref", "", "at", R));
+                of(ChatProgress.Step.class, Map.of("kind", ChatProgress.Step.READ), "label", "", "kind", R, "ref", "", "at", R),
+                // GEO-V-07: an agent's answer to a page's function call; a null value is the answer of a function that returns nothing
+                of(FunctionResponse.class, nullable("functionCallId", "call-1", "value", "ok", "error", null), "app", R, "surfaceId", R, "session", "", "functionCallId", R,
+                        "value", T, "error", T, "at", NOW),
+                of(FunctionResponse.Failure.class, Map.of("code", "NOT_FOUND"), "code", R, "message", ""));
         List<Class<?>> records = new ArrayList<>(recordsOf(Surface.class));
         records.addAll(recordsOf(ChatMessage.class));
         assertThat(table.stream().map(Row::type).distinct().toList()).as("every record of the two packages has a row").containsExactlyInAnyOrderElementsOf(records);

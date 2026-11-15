@@ -29,9 +29,9 @@ import java.util.Objects;
 public record Surface(int schemaVersion, String app, String surfaceId, String catalogId, long seq, Map<String, Object> message, String version, Instant at) {
 
     public static final int VERSION = 1;
-    public static final String A2UI_VERSION = "v0.9.1";
+    public static final String A2UI_VERSION = "1.0";   // A2UI 1.0 since 2026-11-12 (srad/agentspaces-geo.md phase 0)
     /** The A2UI basic catalog, the one every renderer has. */
-    public static final String BASIC_CATALOG = "https://a2ui.org/specification/v0_9/catalogs/basic/catalog.json";
+    public static final String BASIC_CATALOG = "https://a2ui.org/specification/v1_0/catalogs/basic/catalog.json";
 
     public Surface {
         // the app and the surface id are dereferenced by the hosts that sort surfaces by them (one null

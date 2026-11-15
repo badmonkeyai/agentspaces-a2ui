@@ -17,9 +17,11 @@
 
 package ai.badmonkey.agentspaces.a2ui;
 
+import ai.badmonkey.agentspaces.a2ui.records.FunctionResponse;
 import ai.badmonkey.agentspaces.api.space.Lease;
 import ai.badmonkey.agentspaces.api.space.Space;
 import ai.badmonkey.agentspaces.api.space.Template;
+import com.fasterxml.jackson.databind.JsonNode;
 
 import java.time.Duration;
 import java.time.InstantSource;
@@ -32,7 +34,7 @@ import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
- * A surface agent's pen: writes A2UI v0.9.1 envelopes as {@code Surface} entries into the group's
+ * A surface agent's pen: writes A2UI 1.0 envelopes as {@code Surface} entries into the group's
  * {@code views} space, one per message in {@code seq} order per surface, and reads back the {@code SurfaceAction}
  * entries renderers send. Components are plain maps in the basic catalog's shape; a few builders cover the
  * common ones so an agent's surface reads as what it says.
@@ -92,10 +94,27 @@ public final class Surfaces {
 
     /** {@code updateComponents}: the flat list; relationships are ids. */
     public Surfaces components(String surfaceId, List<Map<String, Object>> components) {
+        for (Map<String, Object> c : components) {
+            componentId(c.get("id"));
+        }
         Map<String, Object> m = new LinkedHashMap<>();
         m.put("surfaceId", surfaceId);
         m.put("components", List.copyOf(components));
         return write(surfaceId, "", "updateComponents", m);
+    }
+
+    /** A2UI 1.0's component id: a Unicode identifier (UAX #31), so {@code barMenu} and {@code bar_menu}, never {@code bar-menu}. */
+    private static final java.util.regex.Pattern COMPONENT_ID = java.util.regex.Pattern.compile("[\\p{IsAlphabetic}_][\\p{IsAlphabetic}\\p{IsDigit}_]*");
+
+    /** Refuses a component id A2UI 1.0 refuses, naming it and a form it takes (2026-11-12); returns the id as text. */
+    public static String componentId(Object id) {
+        String s = id == null ? "" : String.valueOf(id);
+        if (!COMPONENT_ID.matcher(s).matches()) {
+            throw new IllegalArgumentException("component id '" + s + "' is not an A2UI 1.0 identifier (UAX #31): use letters, digits and _ only, such as "
+                    + java.util.Arrays.stream(s.split("[^\\p{IsAlphabetic}\\p{IsDigit}_]+")).filter(w -> !w.isEmpty())
+                    .reduce((a, b) -> a + Character.toUpperCase(b.charAt(0)) + b.substring(1)).orElse("root"));
+        }
+        return s;
     }
 
     /** {@code updateDataModel}: a value at a JSON pointer ({@code /} replaces the model and stays as long as the surface; a path's update stays {@code updateLease}). */
@@ -169,11 +188,31 @@ public final class Surfaces {
     public List<SurfaceAction> actions() {
         List<SurfaceAction> out = new ArrayList<>();
         for (SurfaceAction a : views.readAll(Template.of(SurfaceAction.class), 500)) {
-            if (app.equals(a.app()) && seen.add(a.surfaceId() + "|" + a.at() + "|" + a.action().getOrDefault("name", ""))) {
+            // a call's id tells two calls of one function apart even when the host stamped both with the same instant
+            if (app.equals(a.app()) && seen.add(a.surfaceId() + "|" + a.at() + "|" + a.action().getOrDefault("name", "") + "|" + a.functionCallId())) {
                 out.add(a);
             }
         }
         return out;
+    }
+
+    /**
+     * Answers a page's call to one of this agent's functions with the function's value (JSON, or null for a function
+     * that returns nothing): a {@link FunctionResponse} in {@code views}, which the host delivers to the calling session's
+     * page alone. Refuses an action that calls no function.
+     */
+    public FunctionResponse answer(SurfaceAction call, Object value) {
+        return respond(FunctionResponse.answering(call, value, clock.instant()));
+    }
+
+    /** Answers a page's call with a failure: a code the page can branch on and a sentence a person reads. */
+    public FunctionResponse fail(SurfaceAction call, String code, String message) {
+        return respond(FunctionResponse.failing(call, code, message, clock.instant()));
+    }
+
+    private FunctionResponse respond(FunctionResponse r) {
+        views.write(r, Lease.of(FunctionResponse.LEASE), Map.of("app", r.app(), "surfaceId", r.surfaceId(), "kind", "function-response"));
+        return r;
     }
 
     // ---- component builders (the basic catalog)
@@ -182,17 +221,24 @@ public final class Surfaces {
         Map<String, Object> m = new LinkedHashMap<>();
         m.put("id", id);
         m.put("component", "Text");
-        m.put("text", text);
-        if (variant != null && !variant.isBlank()) {
+        // A2UI 1.0's Text takes the variants caption and body alone; a heading (h1 to h5) is the Markdown its text draws
+        int level = headingLevel(variant);
+        m.put("text", level > 0 && text != null && !text.isBlank() ? "#".repeat(level) + " " + text : text);
+        if (variant != null && !variant.isBlank() && level == 0) {
             m.put("variant", variant);
         }
         return m;
     }
 
+    /** 1 to 5 for the v0.9 heading variants h1 to h5, which A2UI 1.0's Text draws as Markdown; 0 for any other. */
+    static int headingLevel(String variant) {
+        return variant != null && variant.matches("h[1-5]") ? variant.charAt(1) - '0' : 0;
+    }
+
     /** A text bound to the data model at a JSON pointer. */
     public static Map<String, Object> bound(String id, String path, String variant) {
         Map<String, Object> m = text(id, "", variant);
-        m.put("text", Map.of("path", path));
+        m.put("text", Map.of("@path", path));   // A2UI 1.0's data binding
         return m;
     }
 
@@ -223,8 +269,61 @@ public final class Surfaces {
         Map<String, Object> m = new LinkedHashMap<>();
         m.put("id", id);
         m.put("component", "Button");
-        m.put("child", id + "-text");
+        m.put("child", id + "Text");
+        // the context's keys are names; each value is a literal or a 1.0 binding, never v0.9.1's (GEO-V-05)
+        if (context != null) {
+            context.forEach((k, v) -> binding("Button.action.event.context." + k, v));
+        }
         m.put("action", Map.of("event", Map.of("name", eventName, "context", context == null ? Map.of() : context)));
+        if (variant != null && !variant.isBlank()) {
+            m.put("variant", variant);
+        }
+        return m;
+    }
+
+    /**
+     * The functions the basic catalog runs in the renderer itself (A2UI 1.0's {@code anyFunction}). A call to one of them
+     * never reaches the agent, so an agent function may not take one of these names.
+     */
+    public static final Set<String> RENDERER_FUNCTIONS = Set.of("required", "regex", "length", "numeric", "email", "formatString", "formatNumber",
+            "formatCurrency", "formatDate", "pluralize", "openUrl", "and", "or", "not");
+
+    /** An agent function's name: an identifier, as 1.0 names a function, of at most 64 characters. */
+    private static final java.util.regex.Pattern FUNCTION_NAME = java.util.regex.Pattern.compile("[\\p{IsAlphabetic}_][\\p{IsAlphabetic}\\p{IsDigit}_]{0,63}");
+
+    /**
+     * An action that calls one of the drawing agent's functions (A2UI 1.0's {@code functionCall}, GEO-V-07): on a press
+     * the renderer sends {@code callAgentFunction} with the arguments resolved against the data model, the host carries
+     * it to the agent as a {@link SurfaceAction} with a {@code functionCallId}, and the agent's
+     * {@link #answer} comes back to the page that pressed. Each argument is a literal or a 1.0 binding
+     * ({@code Map.of("@path", "/x")}), never v0.9.1's; the name is an identifier and not one of
+     * {@link #RENDERER_FUNCTIONS}, which the renderer runs itself.
+     */
+    public static Map<String, Object> functionCall(String function, Map<String, Object> args) {
+        String name = function == null ? "" : function;
+        if (!FUNCTION_NAME.matcher(name).matches()) {
+            throw new IllegalArgumentException("an agent function's name is an identifier of at most 64 letters, digits and _: '" + name + "'");
+        }
+        if (RENDERER_FUNCTIONS.contains(name)) {
+            throw new IllegalArgumentException("'" + name + "' is a function the renderer runs itself (the basic catalog's); name the agent's function otherwise");
+        }
+        Map<String, Object> call = new LinkedHashMap<>();
+        call.put("@call", name);
+        if (args != null && !args.isEmpty()) {
+            // the arguments' keys are names; each value is a literal or a 1.0 binding, never v0.9.1's (GEO-V-05)
+            args.forEach((k, v) -> binding("functionCall.args." + k, v));
+            call.put("args", new LinkedHashMap<>(args));
+        }
+        return Map.of("functionCall", call);
+    }
+
+    /** A button whose press calls one of the drawing agent's functions ({@link #functionCall}) and waits for its answer. */
+    public static Map<String, Object> functionButton(String id, String childText, String function, Map<String, Object> args, String variant) {
+        Map<String, Object> m = new LinkedHashMap<>();
+        m.put("id", componentId(id));
+        m.put("component", "Button");
+        m.put("child", id + "Text");
+        m.put("action", functionCall(function, args));
         if (variant != null && !variant.isBlank()) {
             m.put("variant", variant);
         }
@@ -261,7 +360,7 @@ public final class Surfaces {
         if (unit != null && !unit.isBlank()) {
             m.put("unit", unit);
         }
-        return m;
+        return checked(m);
     }
 
     public static Map<String, Object> dataTable(String id, List<Map<String, Object>> columns, String rows, String rowAction) {
@@ -271,7 +370,7 @@ public final class Surfaces {
         if (rowAction != null && !rowAction.isBlank()) {
             m.put("rowAction", rowAction);
         }
-        return m;
+        return checked(m);
     }
 
     public static Map<String, Object> map(String id, List<Map<String, Object>> layers, String markerAction) {
@@ -294,7 +393,7 @@ public final class Surfaces {
                 m.put(k, v);
             }
         });
-        return m;
+        return checked(m);
     }
 
     /**
@@ -317,7 +416,7 @@ public final class Surfaces {
                 l.put(k, v);
             }
         });
-        return l;
+        return piece("Map", l, "layers", "*");
     }
 
     /** A panel with a header over one child: dragged by the header, minimized to its bar. */
@@ -328,7 +427,7 @@ public final class Surfaces {
         if (placement != null && !placement.isBlank()) {
             m.put("placement", placement);
         }
-        return m;
+        return checked(m);
     }
 
     /** A window with buttons in its header: each from {@link #titleAction}. */
@@ -337,7 +436,7 @@ public final class Surfaces {
         if (actions != null && !actions.isEmpty()) {
             m.put("actions", List.copyOf(actions));
         }
-        return m;
+        return checked(m);
     }
 
     /** A status box: the status word with its icon, a title, the text or a path to it. */
@@ -353,7 +452,7 @@ public final class Surfaces {
         if (dismissAction != null && !dismissAction.isBlank()) {
             m.put("dismissAction", dismissAction);
         }
-        return m;
+        return checked(m);
     }
 
     /** A row of actions: each {@code {label, action, primary?, context?}}. */
@@ -363,7 +462,7 @@ public final class Surfaces {
             m.put("title", title);
         }
         m.put("actions", List.copyOf(actions));
-        return m;
+        return checked(m);
     }
 
     /** A toolbar whose overflow is a {@link #menu} by id. */
@@ -372,20 +471,20 @@ public final class Surfaces {
         if (menu != null && !menu.isBlank()) {
             m.put("menu", menu);
         }
-        return m;
+        return checked(m);
     }
 
     // ---- the frame of a page: its title bar, its menus and its panel splits
 
     /**
-     * The page's one bar: a title (a literal, or {@code Map.of("path", ...)}), a subtitle, an icon, a status
+     * The page's one bar: a title (a literal, or {@code Map.of("@path", ...)}), a subtitle, an icon, a status
      * from {@link #titleStatus}, buttons from {@link #titleAction}, and the id of a {@link #menu} drawn as its overflow;
      * a blank or empty argument is left out.
      */
     public static Map<String, Object> titleBar(String id, Object title, String subtitle, String icon, Map<String, Object> status,
                                                List<Map<String, Object>> actions, String menu) {
         Map<String, Object> m = viz(id, "TitleBar");
-        m.put("title", title);
+        m.put("title", binding("title", title));
         putText(m, "subtitle", subtitle);
         putText(m, "icon", icon);
         if (status != null && !status.isEmpty()) {
@@ -395,7 +494,7 @@ public final class Surfaces {
             m.put("actions", List.copyOf(actions));
         }
         putText(m, "menu", menu);
-        return m;
+        return checked(m);
     }
 
     /** A title bar's status: the path of the WorkingOn rows, and the words for working and for idle. */
@@ -426,7 +525,7 @@ public final class Surfaces {
         Map<String, Object> m = viz(id, "Menu");
         m.put("trigger", trigger);
         m.put("items", List.copyOf(items));
-        return m;
+        return checked(m);
     }
 
     /** A menu whose items the data model holds at {@code itemsPath}, such as a context menu an agent fills per row. */
@@ -434,7 +533,7 @@ public final class Surfaces {
         Map<String, Object> m = viz(id, "Menu");
         m.put("trigger", trigger);
         m.put("items", itemsPath);
-        return m;
+        return checked(m);
     }
 
     /** What opens a menu: {@code button}, {@code overflow}, or {@code context}, and its words. */
@@ -448,6 +547,82 @@ public final class Surfaces {
     /** A menu item that dispatches {@code actionName}. */
     public static Map<String, Object> menuItem(String id, String label, String actionName) {
         return menuItem(id, label, actionName, Map.of());
+    }
+
+    /**
+     * A literal or an A2UI 1.0 data binding ({@code Map.of("@path", "/x")}), as a path-or-literal property takes it; the
+     * v0.9.1 forms {@code Map.of("path", "/x")} and {@code Map.of("call", ...)} are refused, naming the property, since
+     * the wire carries 1.0 alone (2026-11-12, no v0.9.1 reading kept; GEO-V-05). A map or a list is walked to its
+     * leaves, so an old form nested in a list or under another key is refused as well.
+     */
+    static Object binding(String property, Object value) {
+        return binding(null, property, value, null);
+    }
+
+    /**
+     * The same walk by a schema of {@code catalog}: a map whose schema declares {@code path} (a Map layer's, a Chart
+     * series') or {@code call} as a property keeps it, a free-form record (an action's context) keeps its keys as names
+     * and has its values walked, an embedded component (a Report section's) is read by its own schema, and any other map
+     * with {@code path} or {@code call} and no {@code @path} or {@code @call} is a v0.9.1 form and refused, naming where
+     * it sits. With no schema every such map is refused. Returns the value.
+     */
+    public static <T> T binding(JsonNode catalog, String where, T value, JsonNode schema) {
+        JsonNode s = Catalogs.resolve(catalog, schema);
+        if (value instanceof Map<?, ?> m) {
+            if (catalog != null && m.get("component") instanceof String name && catalog.path("components").has(name)
+                    && !Catalogs.declares(catalog, s, "component")) {
+                s = catalog.path("components").path(name);
+            }
+            boolean record = Catalogs.record(catalog, s);
+            if (!record && m.containsKey("path") && !m.containsKey("@path") && !Catalogs.declares(catalog, s, "path")) {
+                throw new IllegalArgumentException(where + " binds with A2UI 1.0's {\"@path\": ...}, not v0.9.1's {\"path\": ...}");
+            }
+            if (!record && m.containsKey("call") && !m.containsKey("@call") && !Catalogs.declares(catalog, s, "call")) {
+                throw new IllegalArgumentException(where + " calls a function with A2UI 1.0's {\"@call\": ...}, not v0.9.1's {\"call\": ...}");
+            }
+            for (Map.Entry<?, ?> e : m.entrySet()) {
+                String key = String.valueOf(e.getKey());
+                binding(catalog, where + "." + key, e.getValue(), Catalogs.property(catalog, s, key));
+            }
+        } else if (value instanceof List<?> l) {
+            JsonNode items = Catalogs.items(catalog, s);
+            for (int i = 0; i < l.size(); i++) {
+                binding(catalog, where + "[" + i + "]", l.get(i), items);
+            }
+        }
+        return value;
+    }
+
+    /**
+     * Routes every property of a built component through {@link #binding(JsonNode, String, Object, JsonNode)} by the
+     * component's schema in {@code catalog}, so no builder writes a v0.9.1 binding or call in any property or option,
+     * however deep (GEO-V-05). Returns the component.
+     */
+    public static Map<String, Object> bindings(JsonNode catalog, Map<String, Object> component) {
+        String name = String.valueOf(component.get("component"));
+        JsonNode schema = catalog.path("components").path(name);
+        for (Map.Entry<String, Object> e : component.entrySet()) {
+            if (!"id".equals(e.getKey()) && !"component".equals(e.getKey())) {
+                binding(catalog, name + "." + e.getKey(), e.getValue(), Catalogs.property(catalog, schema, e.getKey()));
+            }
+        }
+        return component;
+    }
+
+    /** A viz or widgets component, its properties walked by its own catalog before a builder hands it out. */
+    private static Map<String, Object> checked(Map<String, Object> m) {
+        return bindings(WidgetsCatalog.COMPONENTS.contains(String.valueOf(m.get("component"))) ? WidgetsCatalog.CATALOG : VizCatalog.CATALOG, m);
+    }
+
+    /** A piece of a component (a Map layer, a menu item) walked by its schema at {@code path} under the component, so the call that wrote it fails. */
+    private static Map<String, Object> piece(String component, Map<String, Object> value, String... path) {
+        JsonNode schema = VizCatalog.CATALOG.path("components").path(component);
+        StringBuilder where = new StringBuilder(component);
+        for (String step : path) {
+            schema = "*".equals(step) ? Catalogs.items(VizCatalog.CATALOG, schema) : Catalogs.property(VizCatalog.CATALOG, schema, step);
+            where.append("*".equals(step) ? "[]" : "." + step);
+        }
+        return binding(VizCatalog.CATALOG, where.toString(), value, schema);
     }
 
     /** A menu item with {@code more} of {@code shortcut}, {@code group}, {@code disabled}, {@code checked}, or an action {@code context}. */
@@ -465,7 +640,7 @@ public final class Surfaces {
             }
         });
         m.put("action", action);
-        return m;
+        return piece("Menu", m, "items", "*");
     }
 
     /** A submenu: an item whose items open beside it, one level deep. */
@@ -479,7 +654,7 @@ public final class Surfaces {
         m.put("id", id);
         m.put("label", label);
         m.put("items", List.copyOf(items));
-        return m;
+        return piece("Menu", m, "items", "*");
     }
 
     /**
@@ -502,7 +677,7 @@ public final class Surfaces {
             m.put("stackBelow", stackBelow);
         }
         m.put("panes", List.copyOf(panes));
-        return m;
+        return checked(m);
     }
 
     /** One pane of a split: its id, its child's id (blank for an empty pane), its share, its minimum in pixels, whether it collapses, and its name. */
@@ -539,14 +714,14 @@ public final class Surfaces {
         if (path != null && !path.isBlank()) {
             m.put("path", path);
         }
-        return m;
+        return checked(m);
     }
 
     /** Prose: Markdown text as safe HTML, the text or a path to it (named Prose: the A2UI React binding keeps the Markdown element for itself). */
     public static Map<String, Object> prose(String id, String text) {
         Map<String, Object> m = viz(id, "Prose");
         m.put("text", text);
-        return m;
+        return checked(m);
     }
 
     /**
@@ -562,7 +737,7 @@ public final class Surfaces {
         putText(m, "agent", agent);
         m.put("key", key == null ? "" : key);
         m.putAll(new java.util.TreeMap<>(options));
-        return m;
+        return checked(m);
     }
 
     /**
@@ -575,20 +750,20 @@ public final class Surfaces {
         Map<String, Object> m = viz(id, "FileTree");
         m.put("reads", reads == null || reads.isBlank() ? "/files" : reads);
         m.putAll(new java.util.TreeMap<>(options));
-        return m;
+        return checked(m);
     }
 
     /**
-     * One file by its media type: {@code file} a SharedFile id, or {@code Map.of("path", ...)}
+     * One file by its media type: {@code file} a SharedFile id, or {@code Map.of("@path", ...)}
      * where a tree puts the person's choice, and {@code options} of {@code files}, {@code maxBytes} (at most 16 MiB),
      * {@code csvRows} and {@code kinds}, each checked against the catalog.
      */
     public static Map<String, Object> filePreview(String id, Object file, Map<String, Object> options) {
         WidgetsCatalog.check("FilePreview", options);
         Map<String, Object> m = viz(id, "FilePreview");
-        m.put("file", file);
+        m.put("file", binding("file", file));
         m.putAll(new java.util.TreeMap<>(options));
-        return m;
+        return checked(m);
     }
 
     /** A chat with an agent: the ChatMessage rows at {@code lines}, the thread {@code key}, the agent named. */
@@ -599,7 +774,7 @@ public final class Surfaces {
         if (agent != null && !agent.isBlank()) {
             m.put("agent", agent);
         }
-        return m;
+        return checked(m);
     }
 
     public static Map<String, Object> graph(String id, String nodes, String edges, String layout, String nodeAction) {
@@ -610,7 +785,63 @@ public final class Surfaces {
         if (nodeAction != null && !nodeAction.isBlank()) {
             m.put("nodeAction", nodeAction);
         }
-        return m;
+        return checked(m);
+    }
+
+    /**
+     * {@code Visualize} (srad/agentspaces-geo.md §3.4, GEO-D-01): a chart of the table at {@code rows} by a spec: the
+     * {@code mark} (bar, column, line, area, scatter or table), the {@code x} column, and {@code y}, one column or a list
+     * of them; {@code options} carries {@code color}, {@code aggregate}, {@code sort}, {@code title}, {@code unit} and
+     * {@code table}, each checked against the catalog.
+     */
+    public static Map<String, Object> visualize(String id, String rows, String mark, String x, Object y, Map<String, Object> options) {
+        if (rows == null || !rows.startsWith("/")) {
+            throw new IllegalArgumentException("a Visualize reads a table at a data model path such as /spend: " + rows);
+        }
+        if (x == null || x.isBlank()) {
+            throw new IllegalArgumentException("a Visualize names its x column");
+        }
+        if (y != null && !(y instanceof String) && !(y instanceof List<?> l && l.stream().allMatch(v -> v instanceof String))) {
+            throw new IllegalArgumentException("a Visualize's y is a column or a list of columns: " + y);
+        }
+        Map<String, Object> m = viz(id, "Visualize");
+        m.put("rows", rows);
+        m.put("mark", mark == null || mark.isBlank() ? "column" : mark);
+        m.put("x", x);
+        if (y != null && !(y instanceof String s && s.isBlank())) {
+            m.put("y", y instanceof List<?> l ? List.copyOf(l) : y);
+        }
+        Map<String, Object> checked = new LinkedHashMap<>(Map.of("mark", m.get("mark")));
+        if (options != null) {
+            options.forEach((k, v) -> { if (v != null && !(v instanceof String str && str.isBlank())) { checked.put(k, v); m.put(k, v); } });
+        }
+        Catalogs.checkOptions(VizCatalog.catalog(), "Visualize", checked);
+        return checked(m);
+    }
+
+    /**
+     * {@code GraphView} (GEO-G-01): the graph of a nodes table and an edges table, laid out {@code force}, {@code tree} or
+     * {@code layered}; {@code options} carries {@code features} (GeoFeatures whose links are the edges, instead of the two
+     * tables), {@code map}, {@code selectAction} and {@code title}.
+     */
+    public static Map<String, Object> graphView(String id, String nodes, String edges, String layout, Map<String, Object> options) {
+        Map<String, Object> m = viz(id, "GraphView");
+        if (nodes != null && !nodes.isBlank()) {
+            m.put("nodes", nodes);
+        }
+        if (edges != null && !edges.isBlank()) {
+            m.put("edges", edges);
+        }
+        m.put("layout", layout == null || layout.isBlank() ? "force" : layout);
+        Map<String, Object> checked = new LinkedHashMap<>(Map.of("layout", m.get("layout")));
+        if (options != null) {
+            options.forEach((k, v) -> { if (v != null && !(v instanceof String str && str.isBlank())) { checked.put(k, v); m.put(k, v); } });
+        }
+        Catalogs.checkOptions(VizCatalog.catalog(), "GraphView", checked);
+        if (!m.containsKey("features") && (!m.containsKey("nodes") || !m.containsKey("edges"))) {
+            throw new IllegalArgumentException("a GraphView binds a nodes table and an edges table, or GeoFeatures with their links");
+        }
+        return checked(m);
     }
 
     public static Map<String, Object> timeline(String id, String events, String lanes) {
@@ -619,7 +850,7 @@ public final class Surfaces {
         if (lanes != null && !lanes.isBlank()) {
             m.put("lanes", lanes);
         }
-        return m;
+        return checked(m);
     }
 
     /** A report of sections: each {@code {heading, kind, text | component}}. */
@@ -627,7 +858,7 @@ public final class Surfaces {
         Map<String, Object> m = viz(id, "Report");
         m.put("title", title);
         m.put("sections", List.copyOf(sections));
-        return m;
+        return checked(m);
     }
 
     public static Map<String, Object> notification(String id, String items, String ackAction, String routeAction) {
@@ -637,7 +868,7 @@ public final class Surfaces {
         if (routeAction != null && !routeAction.isBlank()) {
             m.put("routeAction", routeAction);
         }
-        return m;
+        return checked(m);
     }
 
     public static Map<String, Object> form(String id, String fragment, List<String> fields, String submitAction) {
@@ -647,7 +878,7 @@ public final class Surfaces {
             m.put("fields", List.copyOf(fields));
         }
         m.put("submitAction", submitAction);
-        return m;
+        return checked(m);
     }
 
     public static Map<String, Object> stat(String id, String label, String value, String unit, String delta, String status) {
@@ -663,6 +894,6 @@ public final class Surfaces {
         if (status != null && !status.isBlank()) {
             m.put("status", status);
         }
-        return m;
+        return checked(m);
     }
 }

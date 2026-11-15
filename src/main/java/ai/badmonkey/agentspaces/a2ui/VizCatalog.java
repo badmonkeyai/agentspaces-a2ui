@@ -30,9 +30,12 @@ public final class VizCatalog {
     public static final String ID = "agentspaces-viz";
     public static final String CATALOG_PATH = "/catalogs/agentspaces-viz/catalog.json";
     public static final String LOOK_AND_FEEL_SCHEMA_PATH = "/catalogs/look-and-feel.schema.json";
-    public static final List<String> COMPONENTS = List.of("Chart", "DataTable", "Map", "Graph", "Timeline", "Report", "Notification", "Form", "Stat", "Window", "Conversation", "Notice", "Toolbar", "KeyValue", "Prose", "TitleBar", "Menu", "Split");
+    public static final List<String> COMPONENTS = List.of("Chart", "Visualize", "DataTable", "Map", "Graph", "GraphView", "Timeline", "Report", "Notification", "Form", "Stat", "Window", "Conversation", "Notice", "Toolbar", "KeyValue", "Prose", "TitleBar", "Menu", "Split");
     private VizCatalog() {
     }
+
+    /** The catalog as the jar carries it, read once, for the builders' checks. */
+    static final JsonNode CATALOG = Catalogs.read(CATALOG_PATH);
 
     /** The catalog document. */
     public static JsonNode catalog() {

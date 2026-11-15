@@ -37,7 +37,7 @@ class A2uiGoldenTest {
 
     static Surface surface() {
         return new Surface(Surface.VERSION, "app-desk", "claim-77", Surface.BASIC_CATALOG, 1,
-                Map.of("version", "v0.9.1", "createSurface", Map.of("surfaceId", "claim-77", "catalogId", Surface.BASIC_CATALOG)), "v0.9.1", AT);
+                Map.of("version", "1.0", "createSurface", Map.of("surfaceId", "claim-77", "catalogId", Surface.BASIC_CATALOG)), "1.0", AT);
     }
 
     static SurfaceAction action() {
@@ -71,5 +71,25 @@ class A2uiGoldenTest {
             Files.writeString(vector, hex + "\n", StandardCharsets.UTF_8);
         }
         assertThat(hex).as(name + " pins the canonical bytes").isEqualTo(Files.readString(vector, StandardCharsets.UTF_8).trim());
+    }
+
+    @org.junit.jupiter.api.Test
+    void envelopesAreA2uiOnePointZero() {
+        // A2UI 1.0 (srad/agentspaces-geo.md phase 0, 2026-11-12): the version, the v1 basic catalog, and @path bindings
+        org.assertj.core.api.Assertions.assertThat(Surface.A2UI_VERSION).isEqualTo("1.0");
+        org.assertj.core.api.Assertions.assertThat(Surface.BASIC_CATALOG).isEqualTo("https://a2ui.org/specification/v1_0/catalogs/basic/catalog.json");
+        org.assertj.core.api.Assertions.assertThat(Surfaces.bound("t", "/name", "body").get("text")).isEqualTo(java.util.Map.of("@path", "/name"));
+        // 1.0's Text has no heading variants: a heading is Markdown, and no variant outside caption and body is written
+        org.assertj.core.api.Assertions.assertThat(Surfaces.text("h", "Claims", "h2")).containsEntry("text", "## Claims").doesNotContainKey("variant");
+        org.assertj.core.api.Assertions.assertThat(Surfaces.bound("b", "/t", "h3")).doesNotContainKey("variant");
+        org.assertj.core.api.Assertions.assertThat(Surfaces.text("c", "small", "caption")).containsEntry("variant", "caption");
+        // 1.0's component ids are UAX #31 identifiers: a hyphen is refused, naming a form that is taken
+        org.assertj.core.api.Assertions.assertThatThrownBy(() -> Surfaces.componentId("bar-menu")).hasMessageContaining("barMenu");
+        Surfaces.componentId("barMenu");
+        Surfaces.componentId("bar_menu");
+        // a button names its label's id, and that id is an identifier too (it was id + "-text" under 0.9)
+        Object child = Surfaces.button("approve", "Approve", "approve", java.util.Map.of(), "primary").get("child");
+        org.assertj.core.api.Assertions.assertThat(child).isEqualTo("approveText");
+        Surfaces.componentId(child);
     }
 }

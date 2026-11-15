@@ -58,8 +58,57 @@ class VizCatalogTest {
         }
         assertThat(catalog.path("components").path("Chart").path("properties").path("kind").path("enum")).extracting(JsonNode::asText)
                 .containsExactly("bar", "line", "area", "stat", "sparkline", "heatmap");
-        assertThat(catalog.path("rules").path("charts").asText()).contains("fixed order").contains("table view");
-        assertThat(catalog.path("rules").path("noCode").asText()).contains("no script");
+        // A2UI 1.0 (2026-11-12): the catalog is a 1.0 document; the rules ride in metadata.extensions and in instructions
+        assertThat(catalog.path("protocolVersion").asText()).isEqualTo("1.0");
+        JsonNode rules = catalog.path("metadata").path("extensions").path("agentspaces").path("rules");
+        assertThat(rules.path("charts").asText()).contains("fixed order").contains("table view");
+        assertThat(rules.path("noCode").asText()).contains("no script");
+        assertThat(catalog.path("instructions").asText()).contains("fixed order");
+        for (String name : List.of("Chart", "TitleBar", "Window")) {
+            assertThat(catalog.path("components").path(name).path("properties").path("component").path("const").asText()).as(name).isEqualTo(name);
+        }
+        JsonNode title = Catalogs.resolve(catalog, catalog.path("components").path("TitleBar").path("properties").path("title"));
+        assertThat(title.toString() + Catalogs.resolve(catalog, catalog.at("/$defs/DataBinding"))).as("a binding is 1.0's @path").contains("\"@path\"").doesNotContain("\"path\"");
+    }
+
+    /**
+     * GEO-V-04: both catalogs of this jar are closed A2UI 1.0 documents in the basic catalog's shape: every component
+     * schema says {@code additionalProperties: false} and declares the 1.0 envelope's own properties (id, catalogId,
+     * accessibility, metadata), and {@code $defs} carries anyComponent (each component by reference), anyFunction, and
+     * the shared types every local {@code $ref} reaches.
+     */
+    @Test
+    void theOpenCatalogsAreClosedOnePointZeroDocumentsWithDefs() {
+        for (JsonNode catalog : List.of(VizCatalog.catalog(), WidgetsCatalog.catalog())) {
+            String id = catalog.path("catalogId").asText();
+            List<String> refs = new java.util.ArrayList<>();
+            catalog.path("$defs").path("anyComponent").path("oneOf").forEach(r -> refs.add(r.path("$ref").asText()));
+            assertThat(refs).as(id).containsExactlyElementsOf(Catalogs.componentNames(catalog).stream().map(n -> "#/components/" + n).toList());
+            assertThat(catalog.path("$defs").path("anyComponent").path("discriminator").path("propertyName").asText()).isEqualTo("component");
+            assertThat(catalog.path("$defs").has("anyFunction")).as(id + " says it has no functions").isTrue();
+            for (String name : Catalogs.componentNames(catalog)) {
+                JsonNode c = catalog.path("components").path(name);
+                assertThat(c.path("additionalProperties").isBoolean() && !c.path("additionalProperties").asBoolean()).as(id + "/" + name + " is closed").isTrue();
+                assertThat(c.path("properties").has("id") && c.path("properties").has("catalogId") && c.path("properties").has("accessibility")
+                        && c.path("properties").has("metadata")).as(id + "/" + name + " declares the 1.0 envelope's properties").isTrue();
+                assertThat(c.has("oneOf") || c.has("anyOf")).as("a 1.0 component definition has no top-level oneOf or anyOf").isFalse();
+            }
+            everyLocalRefResolves(catalog, catalog, id);
+        }
+    }
+
+    static void everyLocalRefResolves(JsonNode catalog, JsonNode node, String where) {
+        if (node.has("$ref") && node.get("$ref").isTextual()) {
+            String ref = node.get("$ref").asText();
+            assertThat(ref.startsWith("#/") ? !catalog.at(ref.substring(1)).isMissingNode() : ref.startsWith("https://a2ui.org/specification/v1_0/common_types.json#/$defs/"))
+                    .as(where + " reaches " + ref).isTrue();
+        }
+        node.fields().forEachRemaining(e -> everyLocalRefResolves(catalog, e.getValue(), where + "/" + e.getKey()));
+        if (node.isArray()) {
+            for (int i = 0; i < node.size(); i++) {
+                everyLocalRefResolves(catalog, node.get(i), where + "/" + i);
+            }
+        }
     }
 
     @Test
@@ -74,9 +123,28 @@ class VizCatalogTest {
     }
 
     @Test
+    void theLineInkAndMonoRolesAreOptional() {
+        // 0.7.0: four colour roles and a mono family a look may name; a look without them stays valid as it was
+        JsonNode mode = VizCatalog.lookAndFeelSchema().path("$defs").path("mode");
+        JsonNode color = mode.path("properties").path("color");
+        for (String role : List.of("line", "lineStrong", "inkFaint", "accentInk")) {
+            assertThat(color.path("properties").path(role).path("$ref").asText()).as(role).isEqualTo("#/$defs/hex");
+            assertThat(color.path("properties").path(role).path("description").asText()).as(role).isNotBlank();
+        }
+        assertThat(color.path("required")).extracting(JsonNode::asText)
+                .containsExactlyInAnyOrder("surface", "ink", "accent", "categorical", "status");
+        JsonNode type = mode.path("properties").path("type").path("properties");
+        assertThat(type.path("mono").path("pattern").asText()).isEqualTo(type.path("family").path("pattern").asText());
+        assertThat(mode.path("properties").path("type").has("required")).isFalse();
+        assertThat(VizCatalog.lookAndFeelSchema().path("properties").path("schemaVersion").path("const").asInt()).isEqualTo(1);
+    }
+
+    @Test
     void everyBuilderNamesAComponentOfTheCatalogAndItsRequiredProperties() {
         Map<String, Supplier<Map<String, Object>>> builders = Map.ofEntries(
                 Map.entry("Chart", () -> Surfaces.chart("spend", "bar", "Spend by group", List.of(Map.of("name", "spend", "path", "/spend")), "/groups", "USD")),
+                Map.entry("Visualize", () -> Surfaces.visualize("spendChart", "/spend", "column", "region", "amount", Map.of("color", "quarter", "sort", "-y"))),
+                Map.entry("GraphView", () -> Surfaces.graphView("links", "/nodes", "/edges", "layered", Map.of())),
                 Map.entry("DataTable", () -> Surfaces.dataTable("claims", List.of(Map.of("key", "id", "title", "Claim")), "/claims", "open")),
                 Map.entry("Map", () -> Surfaces.map("fleet", List.of(Map.of("kind", "markers", "path", "/positions", "key", "unit")), "inspect")),
                 Map.entry("Graph", () -> Surfaces.graph("lineage", "/nodes", "/edges", "columns", "open")),
@@ -106,13 +174,27 @@ class VizCatalogTest {
     }
 
     @Test
+    void visualizeAndGraphViewRefuseWhatTheCatalogDoesNotSay() {
+        assertThatThrownBy(() -> Surfaces.visualize("v", "spend", "column", "x", "y", Map.of())).hasMessageContaining("/spend");
+        assertThatThrownBy(() -> Surfaces.visualize("v", "/spend", "pie", "x", "y", Map.of())).hasMessageContaining("Visualize.mark takes");
+        assertThatThrownBy(() -> Surfaces.visualize("v", "/spend", "column", "", "y", Map.of())).hasMessageContaining("x column");
+        assertThatThrownBy(() -> Surfaces.visualize("v", "/spend", "column", "x", 3, Map.of())).hasMessageContaining("a column or a list");
+        assertThatThrownBy(() -> Surfaces.visualize("v", "/spend", "column", "x", "y", Map.of("aggregate", "median"))).hasMessageContaining("Visualize.aggregate takes");
+        assertThatThrownBy(() -> Surfaces.visualize("v", "/spend", "column", "x", "y", Map.of("palette", "rainbow"))).hasMessageContaining("no property palette");
+        assertThat(Surfaces.visualize("v", "/spend", "line", "month", List.of("north", "south"), Map.of())).containsEntry("y", List.of("north", "south"));
+        assertThatThrownBy(() -> Surfaces.graphView("g", "/nodes", null, "force", Map.of())).hasMessageContaining("nodes table and an edges table");
+        assertThatThrownBy(() -> Surfaces.graphView("g", "/n", "/e", "circle", Map.of())).hasMessageContaining("GraphView.layout takes");
+        assertThat(Surfaces.graphView("g", null, null, "force", Map.of("features", "/ships"))).containsEntry("features", "/ships").containsEntry("layout", "force");
+    }
+
+    @Test
     void theGoldenSurfacesAndThePublishArePinned() throws IOException {
-        Surface chart = new Surface(Surface.VERSION, "app-ops", "spend", VizCatalog.ID, 2, Map.of("version", "v0.9.1", "updateComponents",
+        Surface chart = new Surface(Surface.VERSION, "app-ops", "spend", VizCatalog.ID, 2, Map.of("version", "1.0", "updateComponents",
                 Map.of("surfaceId", "spend", "components", List.of(Surfaces.chart("spend", "bar", "Spend by group",
-                        List.of(Map.of("name", "spend", "path", "/spend")), "/groups", "USD")))), "v0.9.1", AT);
+                        List.of(Map.of("name", "spend", "path", "/spend")), "/groups", "USD")))), "1.0", AT);
         pin("surface_viz_chart_cbor", chart, Surface.class);
-        Surface map = new Surface(Surface.VERSION, "app-geo", "fleet", VizCatalog.ID, 2, Map.of("version", "v0.9.1", "updateComponents",
-                Map.of("surfaceId", "fleet", "components", List.of(Surfaces.map("fleet", List.of(Map.of("kind", "tracks", "path", "/tracks", "key", "unit")), "inspect")))), "v0.9.1", AT);
+        Surface map = new Surface(Surface.VERSION, "app-geo", "fleet", VizCatalog.ID, 2, Map.of("version", "1.0", "updateComponents",
+                Map.of("surfaceId", "fleet", "components", List.of(Surfaces.map("fleet", List.of(Map.of("kind", "tracks", "path", "/tracks", "key", "unit")), "inspect")))), "1.0", AT);
         pin("surface_viz_map_cbor", map, Surface.class);
         Publish publish = new Publish(Publish.VERSION, "app-ops", "view-agent", List.of("spend", "overview"), "Operations", "", "idp", Map.of(), AT);
         pin("publish_cbor", publish, Publish.class);
@@ -137,6 +219,8 @@ class VizCatalogTest {
         surfaces.add(golden("Chart", VizCatalog.ID, List.of(Surfaces.chart("spend", "bar", "Spend by group", List.of(Map.of("name", "spend", "path", "/spend"), Map.of("name", "budget", "path", "/budget")), "group", "USD")),
                 Map.of("spend", List.of(Map.of("group", "claims-fleet", "y", 120), Map.of("group", "ops", "y", 80)), "budget", List.of(Map.of("group", "claims-fleet", "y", 150), Map.of("group", "ops", "y", 100))),
                 List.of("Spend by group", "spend", "budget", "claims-fleet", "ops")));
+        // GEO-D-01: a column chart split by a column, aggregated and sorted; GEO-G-01: a layered graph of two tables
+        surfaces.addAll(chartGoldens());
         surfaces.add(golden("DataTable", VizCatalog.ID, List.of(Surfaces.dataTable("claims", List.of(Map.of("key", "id", "title", "Claim"), Map.of("key", "amount", "title", "Amount", "format", "number")), "/claims", "open")),
                 Map.of("claims", List.of(Map.of("id", "C-1001", "amount", 1200), Map.of("id", "C-1002", "amount", 340))), List.of("Claim", "Amount", "C-1001", "C-1002")));
         // icons that move, tracks, areas, alert boxes, a highlight, both actions
@@ -190,11 +274,40 @@ class VizCatalogTest {
         }
         assertThat(json).as("the golden surfaces are pinned; delete the file to regenerate").isEqualTo(Files.readString(golden, StandardCharsets.UTF_8));
         assertThat(surfaces).extracting(m -> m.get("name")).contains("Text").containsAll(VizCatalog.COMPONENTS);
-        for (String frame : List.of("TitleBar", "Menu", "Split", "Chat", "FileTree", "FilePreview")) {
+        for (String frame : List.of("Visualize", "GraphView", "TitleBar", "Menu", "Split", "Chat", "FileTree", "FilePreview")) {
             assertThat(surfaces.stream().filter(g -> frame.equals(g.get("name"))).map(g -> g.get("state")).toList()).as(frame + " in four states")
                     .containsExactly("full", "empty", "loading", "error");
         }
         assertThat(surfaces.stream().map(g -> g.get("surfaceId")).distinct().count()).as("one surface id per golden").isEqualTo(surfaces.size());
+    }
+
+    /**
+     * GEO-Q-31: the components of srad/agentspaces-geo.md in agentspaces-viz (Visualize, GraphView), each in four states:
+     * the chart or the graph, a bound table with no row yet, the table not arrived yet, and a value at the path that does
+     * not read as a table, so the gallery shows what a person sees before the data and when it is wrong.
+     */
+    static List<Map<String, Object>> chartGoldens() {
+        List<Map<String, Object>> out = new java.util.ArrayList<>();
+        Map<String, Object> chart = Surfaces.visualize("spendChart", "/spend", "column", "region", "amount",
+                Map.of("color", "quarter", "aggregate", "sum", "sort", "-y", "title", "Spend by region", "unit", "USD"));
+        out.add(golden("Visualize", "full", VizCatalog.ID, List.of(chart),
+                Map.of("spend", List.of(Map.of("region", "north", "quarter", "Q1", "amount", 120), Map.of("region", "north", "quarter", "Q2", "amount", 90),
+                        Map.of("region", "south", "quarter", "Q1", "amount", 60), Map.of("region", "south", "quarter", "Q1", "amount", 15), Map.of("region", "south", "quarter", "Q2", "amount", 40))),
+                List.of("Spend by region", "north", "south", "Q1", "Q2")));
+        out.add(golden("Visualize", "empty", VizCatalog.ID, List.of(chart), Map.of("spend", List.of()), List.of("Spend by region", "No rows yet")));
+        out.add(golden("Visualize", "loading", VizCatalog.ID, List.of(chart), Map.of(), List.of("Spend by region", "Loading the rows")));
+        out.add(golden("Visualize", "error", VizCatalog.ID, List.of(chart), Map.of("spend", "not a list"), List.of("Spend by region", "Unavailable", "do not read as a table")));
+        Map<String, Object> graph = Surfaces.graphView("lineage", "/nodes", "/edges", "layered", Map.of("title", "Who feeds whom"));
+        out.add(golden("GraphView", "full", VizCatalog.ID, List.of(graph),
+                Map.of("nodes", List.of(Map.of("id", "claimsDb", "label", "claims-db", "kind", "source"), Map.of("id", "registrar", "label", "registrar", "kind", "agent"),
+                        Map.of("id", "adjuster", "label", "adjuster", "kind", "agent")),
+                        "edges", List.of(Map.of("source", "claimsDb", "target", "registrar", "rel", "reads"), Map.of("source", "registrar", "target", "adjuster", "rel", "hands over"))),
+                List.of("Who feeds whom", "claims-db", "registrar", "adjuster")));
+        out.add(golden("GraphView", "empty", VizCatalog.ID, List.of(graph), Map.of("nodes", List.of(), "edges", List.of()), List.of("Who feeds whom", "No graph yet", "No nodes yet")));
+        out.add(golden("GraphView", "loading", VizCatalog.ID, List.of(graph), Map.of(), List.of("Who feeds whom", "Loading the graph")));
+        out.add(golden("GraphView", "error", VizCatalog.ID, List.of(graph), Map.of("nodes", "not a list", "edges", List.of()),
+                List.of("Who feeds whom", "Unavailable", "do not read as a table")));
+        return out;
     }
 
     /**
@@ -207,20 +320,20 @@ class VizCatalogTest {
         List<Map<String, Object>> barMenu = List.of(Surfaces.menuItem("new-chat", "New chat", "chat.new"), Surfaces.menuItem("help", "Help", "help"));
         Map<String, Object> share = Surfaces.titleAction("share", "Share", "share", "share");
         out.add(golden("TitleBar", "full", VizCatalog.ID, List.of(Surfaces.column("root", List.of("bar")),
-                        Surfaces.titleBar("bar", Map.of("path", "/app/title"), "Claims desk", "briefcase", status, List.of(share), "bar-menu"),
-                        Surfaces.menu("bar-menu", Surfaces.trigger("overflow", "More"), barMenu)),
+                        Surfaces.titleBar("bar", Map.of("@path", "/app/title"), "Claims desk", "briefcase", status, List.of(share), "barMenu"),
+                        Surfaces.menu("barMenu", Surfaces.trigger("overflow", "More"), barMenu)),
                 Map.of("app", Map.of("title", "Workbench"), "working", List.of(Map.of("id", "working-workbench-main", "agent", "workbench", "key", "main",
                         "files", List.of("data/q3-expenses.csv"), "task", "reading q3-expenses.csv", "state", "working", "since", "2026-11-10T09:00:00Z"))),
                 List.of("Workbench", "Claims desk", "Agent working", "Share", "More")));
         out.add(golden("TitleBar", "empty", VizCatalog.ID, List.of(Surfaces.titleBar("bar", "Workbench", "", "", Map.of(), List.of(), "")), Map.of(), List.of("Workbench")));
-        out.add(golden("TitleBar", "loading", VizCatalog.ID, List.of(Surfaces.titleBar("bar", Map.of("path", "/app/title"), "", "", status, List.of(), "")),
+        out.add(golden("TitleBar", "loading", VizCatalog.ID, List.of(Surfaces.titleBar("bar", Map.of("@path", "/app/title"), "", "", status, List.of(), "")),
                 Map.of(), List.of("Loading")));
         out.add(golden("TitleBar", "error", VizCatalog.ID, List.of(Surfaces.titleBar("bar", "Workbench", "", "", status, List.of(), "")),
                 Map.of("working", List.of(Map.of("id", "working-workbench-main", "agent", "workbench", "key", "main", "files", List.of(), "task", "",
                         "state", "failed", "since", "2026-11-10T09:00:00Z"))), List.of("Workbench", "The agent stopped")));
         List<Map<String, Object>> items = List.of(
                 Surfaces.menuItem("new-chat", "New chat", "chat.new", Map.of("shortcut", "Ctrl+Shift+O")),
-                Surfaces.menuItem("dark", "Dark mode", "view.dark", Map.of("checked", Map.of("path", "/view/dark"))),
+                Surfaces.menuItem("dark", "Dark mode", "view.dark", Map.of("checked", Map.of("@path", "/view/dark"))),
                 Surfaces.menuItem("export", "Export", "export", Map.of("disabled", true)),
                 Surfaces.submenu("share", "Share", List.of(Surfaces.menuItem("copy-link", "Copy link", "share.link"), Surfaces.menuItem("email", "Email", "share.email"))),
                 Surfaces.menuItem("help", "Help", "help", Map.of("group", "about")));
@@ -288,7 +401,7 @@ class VizCatalogTest {
         out.add(golden("FileTree", "empty", w, List.of(Surfaces.fileTree("tree", "/files", treeOptions)), Map.of("files", List.of()), List.of("Files", "No file yet", "Upload")));
         out.add(golden("FileTree", "loading", w, List.of(Surfaces.fileTree("tree", "/files", treeOptions)), Map.of(), List.of("Files", "Loading files")));
         out.add(golden("FileTree", "error", w, List.of(Surfaces.fileTree("tree", "/files", treeOptions)), Map.of("files", "not a list"), List.of("Files", "Unavailable")));
-        Map<String, Object> pick = Map.of("path", "/selected/file");
+        Map<String, Object> pick = Map.of("@path", "/selected/file");
         out.add(golden("FilePreview", "full", w, List.of(Surfaces.filePreview("preview", pick, Map.of("files", "/files"))), Map.of("files", List.of(q3, note), "selected", Map.of("file", "f-q3")),
                 List.of("q3-expenses.csv", "text/csv", "1.8 KiB", "Download")));
         out.add(golden("FilePreview", "empty", w, List.of(Surfaces.filePreview("preview", pick, Map.of("files", "/files"))), Map.of("files", List.of(q3)),
@@ -340,18 +453,18 @@ class VizCatalogTest {
     @Test
     void theFrameComponentsCarryTheirShapes() {
         JsonNode c = VizCatalog.catalog().path("components");
-        assertThat(c.path("TitleBar").path("required")).extracting(JsonNode::asText).containsExactly("title");
+        assertThat(c.path("TitleBar").path("required")).extracting(JsonNode::asText).containsExactly("component", "title");   // the 1.0 form names the component
         assertThat(c.path("Menu").path("properties").path("trigger").path("properties").path("kind").path("enum")).extracting(JsonNode::asText)
                 .containsExactly("button", "overflow", "context");
         assertThat(c.path("Split").path("properties").path("panes").path("minItems").asInt()).isEqualTo(2);
         assertThat(c.path("Split").path("properties").path("panes").path("maxItems").asInt()).isEqualTo(3);
         assertThat(c.path("Split").path("properties").path("orientation").path("enum")).extracting(JsonNode::asText).containsExactly("horizontal", "vertical");
         assertThat(c.path("Window").path("properties").has("actions")).as("S6-U-03").isTrue();
-        assertThat(c.path("Toolbar").path("properties").path("menu").path("type").asText()).as("S6-U-02").isEqualTo("string");
+        assertThat(Catalogs.resolve(VizCatalog.catalog(), c.path("Toolbar").path("properties").path("menu")).path("type").asText()).as("S6-U-02").isEqualTo("string");
         // the builders' shapes, as SRAD §3.5 gives them
-        Map<String, Object> bar = Surfaces.titleBar("bar", Map.of("path", "/app/title"), "Claims desk", "briefcase", Surfaces.titleStatus("/working", "Agent working", "Ready"),
-                List.of(Surfaces.titleAction("share", "Share", "share", "share")), "bar-menu");
-        assertThat(bar).containsEntry("title", Map.of("path", "/app/title")).containsEntry("menu", "bar-menu")
+        Map<String, Object> bar = Surfaces.titleBar("bar", Map.of("@path", "/app/title"), "Claims desk", "briefcase", Surfaces.titleStatus("/working", "Agent working", "Ready"),
+                List.of(Surfaces.titleAction("share", "Share", "share", "share")), "barMenu");
+        assertThat(bar).containsEntry("title", Map.of("@path", "/app/title")).containsEntry("menu", "barMenu")
                 .containsEntry("status", Map.of("from", "/working", "labels", Map.of("working", "Agent working", "idle", "Ready")));
         assertThat(bar.get("actions")).isEqualTo(List.of(Map.of("id", "share", "label", "Share", "icon", "share", "action", Map.of("name", "share"))));
         assertThat(Surfaces.titleBar("bar", "Workbench", null, null, null, null, null)).containsOnlyKeys("id", "component", "title");

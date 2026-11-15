@@ -16,6 +16,7 @@
 package ai.badmonkey.agentspaces.a2ui;
 
 import java.time.Instant;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -32,7 +33,9 @@ import java.util.Objects;
  * panels in the order their author chose, for a host to synthesize the surface); {@code assembled: true} marks such a
  * Publish. Two more keys lay out a page: {@link #NAVIGATION} draws the surfaces as pages a person moves between,
  * as tabs or a rail, the current page in the URL fragment ({@link #navigation}); {@link #LAYOUT} places whole surfaces
- * in the panes of a split ({@link #layout}). A Publish without them draws its surfaces stacked. Version 1.
+ * in the panes of a split ({@link #layout}), or lays the page out as a conversation ({@link #conversation}): a top bar
+ * with the app's areas, a chat on the left that grows down the page, and the current area's surface on the right. A
+ * Publish without them draws its surfaces stacked. Version 1.
  */
 public record Publish(int schemaVersion, String app, String from, List<String> surfaces, String title, String host, String signOn,
                       Map<String, Object> options, Instant at) {
@@ -42,6 +45,11 @@ public record Publish(int schemaVersion, String app, String from, List<String> s
 
     public static final String NAVIGATION = "navigation";
     public static final String LAYOUT = "layout";
+    /**
+     * In a {@link #conversation} or {@link #geo} layout map: a short line a host draws above the app's title in the top
+     * bar (a section, a place, a mode). Optional; it rides inside {@code options.layout}, so no entry carries a new field.
+     */
+    public static final String KICKER = "kicker";
 
     public Publish {
         Objects.requireNonNull(app, "app");
@@ -102,5 +110,110 @@ public record Publish(int schemaVersion, String app, String from, List<String> s
             m.put("collapsible", true);
         }
         return Map.copyOf(m);
+    }
+
+    /**
+     * {@code options.layout} as a conversation (the standard page of the advanced apps, 2026-11-11): the surface
+     * {@code chat} in the left pane, {@code size} of the width (0.2 to 0.6; 0 for 0.4), growing down the page as a person
+     * chats; the areas from {@link #area} as menu items in the top bar, each a whole surface drawn in the right pane, which
+     * stays in view. The chat stays the same across areas.
+     */
+    public static Map<String, Object> conversation(String chat, double size, List<Map<String, Object>> areas) {
+        return conversation(chat, size, areas, "");
+    }
+
+    /** A {@link #conversation} with a {@link #KICKER} above the title in its bar (blank for none). */
+    public static Map<String, Object> conversation(String chat, double size, List<Map<String, Object>> areas, String kicker) {
+        if (chat == null || chat.isBlank()) {
+            throw new IllegalArgumentException("a conversation names the chat's page");
+        }
+        if (areas.isEmpty()) {
+            throw new IllegalArgumentException("a conversation has at least one area");
+        }
+        if (areas.stream().anyMatch(a -> chat.equals(a.get("page")))) {
+            throw new IllegalArgumentException("an area is not the chat's page: " + chat);
+        }
+        double s = size == 0 ? 0.4 : size;
+        if (s < 0.2 || s > 0.6) {
+            throw new IllegalArgumentException("a conversation's chat takes 0.2 to 0.6 of the width: " + size);
+        }
+        return withKicker(Map.of("kind", "conversation", "chat", chat, "size", s, "areas", List.copyOf(areas)), kicker);
+    }
+
+    /** Where a GeoLayout window opens: against a side (two on one side stack), or free over the map. */
+    public static final List<String> DOCKS = List.of("left", "right", "bottom", "free");
+
+    /**
+     * {@code options.layout} as a GeoLayout (srad/agentspaces-geo.md §3.3, GEO-L-01): the surface {@code map}, which holds
+     * the app's GeoMap, full screen under a top bar, and each window from {@link #geoWindow} a card over it, opened and
+     * closed from the bar's menu. The map's search draws in the bar, and the map opens its selection's details as a window
+     * of its own, so neither is named here. Every window names a surface other than the map's, once.
+     */
+    public static Map<String, Object> geo(String map, List<Map<String, Object>> windows) {
+        return geo(map, windows, "");
+    }
+
+    /** A {@link #geo} layout with a {@link #KICKER} above the title in its bar (blank for none). */
+    public static Map<String, Object> geo(String map, List<Map<String, Object>> windows, String kicker) {
+        if (map == null || map.isBlank()) {
+            throw new IllegalArgumentException("a GeoLayout names the map's page");
+        }
+        java.util.Set<Object> seen = new java.util.HashSet<>();
+        for (Map<String, Object> w : windows) {
+            if (map.equals(w.get("page"))) {
+                throw new IllegalArgumentException("a window is not the map's page: " + map);
+            }
+            if (!seen.add(w.get("page"))) {
+                throw new IllegalArgumentException("a page opens in one window: " + w.get("page"));
+            }
+        }
+        return withKicker(Map.of("kind", "geo", "map", map, "windows", List.copyOf(windows)), kicker);
+    }
+
+    /** A layout map as it is without a kicker, else with the kicker's trimmed words under {@link #KICKER}. */
+    private static Map<String, Object> withKicker(Map<String, Object> layout, String kicker) {
+        if (kicker == null || kicker.isBlank()) {
+            return layout;
+        }
+        Map<String, Object> m = new LinkedHashMap<>(layout);
+        m.put(KICKER, kicker.strip());
+        return Map.copyOf(m);
+    }
+
+    /**
+     * One window of a {@link #geo} layout: its surface, the words of its menu item, an icon name (empty for none), whether
+     * it is open when a person first comes, and where it opens ({@link #DOCKS}; empty for right).
+     */
+    public static Map<String, Object> geoWindow(String page, String label, String icon, boolean open, String dock) {
+        if (page == null || page.isBlank()) {
+            throw new IllegalArgumentException("a window names its page");
+        }
+        if (label == null || label.isBlank()) {
+            throw new IllegalArgumentException("a window has a label: " + page);
+        }
+        String d = dock == null || dock.isBlank() ? "right" : dock;
+        if (!DOCKS.contains(d)) {
+            throw new IllegalArgumentException("a window docks left, right, bottom or free: " + dock);
+        }
+        Map<String, Object> m = new LinkedHashMap<>();
+        m.put("page", page);
+        m.put("label", label);
+        if (icon != null && !icon.isBlank()) {
+            m.put("icon", icon);
+        }
+        m.put("open", open);
+        m.put("dock", d);
+        return Map.copyOf(m);
+    }
+
+    /** One area of a {@link #conversation}: its surface, the words of its menu item, and an icon name (empty for none). */
+    public static Map<String, Object> area(String page, String label, String icon) {
+        if (page == null || page.isBlank()) {
+            throw new IllegalArgumentException("an area names its page");
+        }
+        if (label == null || label.isBlank()) {
+            throw new IllegalArgumentException("an area has a label: " + page);
+        }
+        return icon == null || icon.isBlank() ? Map.of("page", page, "label", label) : Map.of("page", page, "label", label, "icon", icon);
     }
 }

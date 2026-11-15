@@ -39,7 +39,7 @@ public final class WidgetsCatalog {
     }
 
     /** The catalog as the jar carries it, read once, for the builders' checks. */
-    private static final JsonNode CATALOG = Catalogs.read(CATALOG_PATH);
+    static final JsonNode CATALOG = Catalogs.read(CATALOG_PATH);
 
     /** The catalog document. */
     public static JsonNode catalog() {

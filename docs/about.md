@@ -8,19 +8,19 @@ agentspaces-a2ui holds the A2UI records an agent writes into a space and a rende
 
 | Record | What |
 | --- | --- |
-| `Surface` | one A2UI v0.9.1 envelope of a surface (`createSurface`, `updateComponents`, `updateDataModel`, `deleteSurface`), with the app, the surface id, the catalog, and its sequence number |
-| `SurfaceAction` | a renderer's action on a surface (`name`, `surfaceId`, `sourceComponentId`, `timestamp`, `context`), with the session it came through |
+| `Surface` | one A2UI 1.0 envelope of a surface (`createSurface`, `updateComponents`, `updateDataModel`, `deleteSurface`), with the app, the surface id, the catalog, and its sequence number |
+| `SurfaceAction` | a renderer's action on a surface (`name`, `surfaceId`, `sourceComponentId`, `timestamp`, `context`), with the session it came through; a page's call to one of the agent's functions arrives in the same shape with a `functionCallId` (`callsFunction()`, `function()`, `args()`) |
 | `Surfaces` | the pen that writes a surface's envelopes in order and hands back the actions, with builders for the basic catalog's common components and for the `agentspaces-viz` catalog's (`chart`, `dataTable`, `map`, `graph`, `timeline`, `report`, `notification`, `form`, `stat`, and the panels beside them) |
 | `Publish` | an agent's request that its surfaces be served as an application for end users at an address of its own: the app host in the group takes it and sets the application card's `host`; `signOn` is `idp` (the host's identity provider, the default) or `none` |
 | `PublishStatic` | an agent's request that a static app be served for end users: the app, the title, the content root and length of its bundle on the group's content swarm, the entry file, each file's path and media type, and `signOn` (`idp`, the default, or `none` for anyone to view); the app host serves the files as is, under the version's own address, and reads nothing live |
 | `StaticBundle`, `StaticFile` | the bundle a `PublishStatic` names by root: every file in path order; `StaticBundle.decode` reads it under the strict wire read and `open(publish)` returns the files only when the bundle holds exactly the ones the publish names |
 | `VizCatalog` | the open `agentspaces-viz` catalog (`catalogs/agentspaces-viz/catalog.json` in the jar) and the look-and-feel JSON Schema (`catalogs/look-and-feel.schema.json`: tokens only) |
 | `WidgetsCatalog` | the open `agentspaces-widgets` catalog (`catalogs/agentspaces-widgets/catalog.json` in the jar) |
-| `Surfaces` builders | `titleBar`, `menu`, `split` (agentspaces-viz) and `chat`, `fileTree`, `filePreview` (agentspaces-widgets); a builder refuses an option its component's catalog does not take |
+| `Surfaces` builders | `titleBar`, `menu`, `split` (agentspaces-viz) and `chat`, `fileTree`, `filePreview` (agentspaces-widgets); a builder refuses an option its component's catalog does not take, and a v0.9.1 `{"path": ...}` or `{"call": ...}` in any property or option, however deep |
 
 ### The open records
 
-`ai.badmonkey.agentspaces.a2ui.records` holds four records under `https://badmonkey.ai/agentspaces/a2ui/v1/`: `ChatMessage` (a line of a thread, in `conversations`), `SharedFile` (a file on the content swarm, in `shared`), `WorkingOn` (what an agent holds while it works, in `views`, leased 60 s), and `ChatProgress` (an agent's progress on one line, in `views`, leased 30 s). `ChatMessage` version 2 adds `format` and `cites`, and `SharedFile` version 2 adds `path` and `replaces`. A version 2 field is omitted while null, so a version 1 value keeps the version 1 bytes. A member that reads version 2 advertises `a2ui.records=2` (`A2uiRecords.hint()`), and a writer asks `A2uiRecords.versionFor(readerHints)` which version to write. SPEC §6.1a.7 is the normative text.
+`ai.badmonkey.agentspaces.a2ui.records` holds five records under `https://badmonkey.ai/agentspaces/a2ui/v1/`: `ChatMessage` (a line of a thread, in `conversations`), `SharedFile` (a file on the content swarm, in `shared`), `WorkingOn` (what an agent holds while it works, in `views`, leased 60 s), `ChatProgress` (an agent's progress on one line, in `views`, leased 30 s), and `FunctionResponse` (an agent's answer to a page's function call, in `views`, leased a minute). `ChatMessage` version 2 adds `format` and `cites`, and `SharedFile` version 2 adds `path` and `replaces`. A version 2 field is omitted while null, so a version 1 value keeps the version 1 bytes. A member that reads version 2 advertises `a2ui.records=2` (`A2uiRecords.hint()`), and a writer asks `A2uiRecords.versionFor(readerHints)` which version to write. SPEC §6.1a.7 is the normative text.
 
 ## How an agent and a renderer use them
 
@@ -34,11 +34,39 @@ pen.create("claim-77", Surface.BASIC_CATALOG)
    .components("claim-77", List.of(Surfaces.column("root", List.of("t", "ack")),
                                    Surfaces.text("t", "Claim 77 needs a decision", "body"),
                                    Surfaces.button("ack", "Acknowledge", "acknowledge", Map.of("claimId", "c-77"), "primary"),
-                                   Surfaces.text("ack-text", "Acknowledge", null)));
+                                   Surfaces.text("ackText", "Acknowledge", null)));
 for (SurfaceAction a : pen.actions()) { ... }
 ```
 
-`Surfaces.button` names its label as the component `<id>-text`, so the surface also carries a `Text` with that id, as above.
+`Surfaces.button` names its label as the component `<id>Text`, so the surface also carries a `Text` with that id, as above.
+
+## Agent functions
+
+A component's action may call one of the drawing agent's functions and wait for its answer: A2UI 1.0's `callAgentFunction`.
+
+- **Draw the call.** `Surfaces.functionCall(function, args)` is 1.0's action `{"functionCall": {"@call": function, "args": {...}}}`, and `Surfaces.functionButton(id, label, function, args, variant)` is a button that makes it, its label the `Text` with the id `<id>Text`, as for `Surfaces.button`. Each argument is a literal or a 1.0 binding (`Map.of("@path", "/selected")`), checked as every builder checks a value. The name is an identifier of at most 64 characters, and never one of the basic catalog's own functions (`Surfaces.RENDERER_FUNCTIONS`), which the renderer runs itself.
+- **Take the call.** On a press the renderer resolves the arguments against the data model and the host carries the call to the agent as a `SurfaceAction`: its `name` is the function, its `context` the arguments, and its `functionCallId` the call's id. `pen.actions()` hands it out once, like any action, and `a.callsFunction()` tells it apart.
+- **Answer it.** `pen.answer(call, value)` writes a `FunctionResponse` with the value, and `pen.fail(call, code, message)` one with an error. The answer copies the call's app, surface, session and id. The value is JSON of at most 32,768 characters as JSON writes it, escapes included, and 16 levels, with no NaN or infinite number. A host delivers the answer, as 1.0's `agentFunctionResponse`, to the page of the calling session alone. It drops an answer to a call it does not hold.
+
+```java
+Map<String, Object> lookUp = Surfaces.functionButton("lookUp", "Look up", "berthOf", Map.of("vessel", Map.of("@path", "/selected")), "primary");
+for (SurfaceAction a : pen.actions()) {
+    if (a.callsFunction() && "berthOf".equals(a.function())) {
+        String berth = berths.get(String.valueOf(a.args().get("vessel")));
+        if (berth == null) pen.fail(a, "NOT_FOUND", "No such vessel in port."); else pen.answer(a, Map.of("berth", berth));
+    }
+}
+```
+
+The rules a host keeps:
+
+- Take a call only from a session it knows, since a page with no session shares the empty one with every other visitor.
+- Take only a function a component of the surface calls, so a page calls what the agent drew and nothing else. An `updateComponents` replaces components by id and leaves the others, so the components are those of every `updateComponents` since the surface's last `createSurface`, each as the newest one that names it left it.
+- Bound each session's calls.
+- Pass an ordinary action on without a `functionCallId`, so only a call the host took reaches an agent as one.
+- Deliver an answer only to that session's open streams of the surface, and only from a peer that drew the surface. A peer drew the surface when it wrote an envelope of it that the host admitted; an envelope the validator refused makes no peer a drawer. Any member that writes an admitted envelope of the surface is a drawer, so the group's members are trusted to answer for what they draw.
+- Judge an answer again on its next look at the drawers while its call waits, rather than drop it for good, when the answering peer began drawing since the last look.
+- A renderer reports a call that gets no answer in its time.
 
 ## Leases
 
@@ -67,6 +95,12 @@ Paths stay inside the app (no `..`, no hidden file, nothing that needs escaping)
   - **FileTree** is the `SharedFile` rows as folders from each `path`, with the WAI-ARIA tree keyboard, badges (an agent working on a file from `WorkingOn`, written by an agent, new or changed since this person looked), upload by a button or a drop, and a context menu: Ask about, Download, Share (`file.share`), Rename (`file.rename`), Remove (`file.remove`). The host applies the three actions. FileShare is its alias as a flat list.
   - **FilePreview** draws one file by its media type: text and Markdown as text, CSV as a table of its first rows, PNG and JPEG as an image, PDF in a sandboxed frame, HTML and SVG as their text. Above `maxBytes` it offers Download.
 - **The look-and-feel schema**: the tokens a published application draws with (colours, type, spacing, density, radius, shadow), light and dark modes, and a texture for the colour-blind and print case. Tokens only: no URL, no markup, no stylesheet.
+
+Both catalogs are closed A2UI 1.0 documents, in the basic catalog's shape:
+
+- **Closed components.** Every component schema says `additionalProperties: false`. A property the catalog does not declare is refused, by a host's validator and by any 1.0 validator. Each component declares 1.0's envelope properties (`id`, `catalogId`, `accessibility`, `metadata`) beside its own.
+- **`$defs`.** `anyComponent` names every component by reference, `anyFunction` says the catalog has no functions of its own, and the shared types (`ComponentId`, `DataBinding`, `TextOrBinding`, `NamedAction`, `HeaderAction`, `Accept`) are referenced from the properties that use them.
+- **The builders walk every value.** A builder walks every property and option value it writes. It refuses v0.9.1's `{"path": ...}` binding and `{"call": ...}` call and names where it sits, such as `Map.follow`. A property the catalog declares as `path` (a Map layer's, a Chart series') passes, and so does an action context's entry called `path`.
 
 Both catalogs are open, and a host adds its own catalogs beside them. `VizCatalog.catalog()`, `WidgetsCatalog.catalog()`, and `VizCatalog.lookAndFeelSchema()` read the documents from the jar. The open React renderer [`@agentspaces/a2ui-react`](https://github.com/badmonkeyai/agentspaces-a2ui-react) draws both catalogs and the basic catalog in a browser; its build regenerates its types from these documents and the golden surfaces, and fails when they drift.
 

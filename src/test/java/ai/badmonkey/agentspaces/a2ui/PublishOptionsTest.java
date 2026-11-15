@@ -45,6 +45,53 @@ class PublishOptionsTest {
     }
 
     @Test
+    void aConversationPutsTheChatLeftAndTheAreasRight() {
+        // the standard page of the advanced apps (2026-11-11): a top bar with the areas, the chat on the left growing down
+        // the page, the current area's page on the right
+        Map<String, Object> layout = Publish.conversation("chat", 0.4, List.of(Publish.area("documents", "Documents", "list"), Publish.area("answer", "How I found it", "")));
+        assertThat(layout).isEqualTo(Map.of("kind", "conversation", "chat", "chat", "size", 0.4,
+                "areas", List.of(Map.of("page", "documents", "label", "Documents", "icon", "list"), Map.of("page", "answer", "label", "How I found it"))));
+        assertThat(Publish.conversation("chat", 0, List.of(Publish.area("a", "A", ""))).get("size")).isEqualTo(0.4);
+        assertThatThrownBy(() -> Publish.conversation("", 0.4, List.of(Publish.area("a", "A", "")))).hasMessageContaining("chat");
+        assertThatThrownBy(() -> Publish.conversation("chat", 0.4, List.of())).hasMessageContaining("area");
+        assertThatThrownBy(() -> Publish.conversation("chat", 0.4, List.of(Publish.area("chat", "Chat", "")))).hasMessageContaining("the chat's page");
+        assertThatThrownBy(() -> Publish.conversation("chat", 0.9, List.of(Publish.area("a", "A", "")))).hasMessageContaining("0.2 to 0.6");
+        assertThatThrownBy(() -> Publish.area("a", "", "")).hasMessageContaining("label");
+    }
+
+    @Test
+    void aGeoLayoutPutsTheMapUnderTheBarAndTheWindowsOverIt() {
+        // srad/agentspaces-geo.md §3.3, GEO-L-01: the map's page full screen, each window a page opened from the bar
+        Map<String, Object> layout = Publish.geo("watch", List.of(Publish.geoWindow("ask", "Ask", "chat", true, "left"),
+                Publish.geoWindow("incidents", "Incidents", "", true, "right"), Publish.geoWindow("spend", "Spend by region", "chart", false, "")));
+        assertThat(layout).isEqualTo(Map.of("kind", "geo", "map", "watch", "windows", List.of(
+                Map.of("page", "ask", "label", "Ask", "icon", "chat", "open", true, "dock", "left"),
+                Map.of("page", "incidents", "label", "Incidents", "open", true, "dock", "right"),
+                Map.of("page", "spend", "label", "Spend by region", "icon", "chart", "open", false, "dock", "right"))));
+        assertThat(Publish.geo("watch", List.of())).containsEntry("windows", List.of());
+        assertThatThrownBy(() -> Publish.geo("", List.of())).hasMessageContaining("map's page");
+        assertThatThrownBy(() -> Publish.geo("watch", List.of(Publish.geoWindow("watch", "Map", "", true, "left")))).hasMessageContaining("not the map's page");
+        assertThatThrownBy(() -> Publish.geo("watch", List.of(Publish.geoWindow("a", "A", "", true, "left"), Publish.geoWindow("a", "B", "", true, "right"))))
+                .hasMessageContaining("one window");
+        assertThatThrownBy(() -> Publish.geoWindow("a", "A", "", true, "top")).hasMessageContaining("left, right, bottom or free");
+        assertThatThrownBy(() -> Publish.geoWindow("a", "", "", true, "left")).hasMessageContaining("label");
+        assertThat(Publish.DOCKS).containsExactly("left", "right", "bottom", "free");
+    }
+
+    @Test
+    void aKickerRidesInTheLayoutMapAboveTheTitle() {
+        // an optional line above the app's title in the bar: inside options.layout, so no entry carries a new field
+        List<Map<String, Object>> areas = List.of(Publish.area("a", "A", ""));
+        assertThat(Publish.conversation("chat", 0.4, areas, "  Operations  ")).isEqualTo(Map.of("kind", "conversation", "chat", "chat", "size", 0.4,
+                "areas", List.of(Map.of("page", "a", "label", "A")), Publish.KICKER, "Operations"));
+        assertThat(Publish.conversation("chat", 0.4, areas, " ")).isEqualTo(Publish.conversation("chat", 0.4, areas)).doesNotContainKey(Publish.KICKER);
+        assertThat(Publish.conversation("chat", 0.4, areas, null)).doesNotContainKey(Publish.KICKER);
+        assertThat(Publish.geo("watch", List.of(), "Harbour")).isEqualTo(Map.of("kind", "geo", "map", "watch", "windows", List.of(), Publish.KICKER, "Harbour"));
+        assertThat(Publish.geo("watch", List.of(), "")).isEqualTo(Publish.geo("watch", List.of())).doesNotContainKey(Publish.KICKER);
+        assertThatThrownBy(() -> Publish.geo("", List.of(), "Harbour")).hasMessageContaining("map's page");
+    }
+
+    @Test
     void aPublishCarriesThemInItsOptions() {
         Map<String, Object> options = Map.of(Publish.NAVIGATION, Publish.navigation("tabs", List.of(Publish.navPage("claims", "Claims", ""))));
         Publish p = new Publish(Publish.VERSION, "desk", "", List.of("claims"), "Desk", "", "idp", options, Instant.EPOCH);

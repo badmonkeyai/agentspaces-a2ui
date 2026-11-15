@@ -59,7 +59,7 @@ public class DeskApp {
                    Surfaces.text("title", "Refund 42: a kettle that arrived broken, 30 EUR", "h3"),
                    Surfaces.bound("status", "/status", "body"),
                    Surfaces.button("approve", "Approve", "approve", Map.of("refundId", "r-42"), "primary"),
-                   Surfaces.text("approve-text", "Approve", null)));   // the button's label
+                   Surfaces.text("approveText", "Approve", null)));   // the button's label
         System.out.println("desk: drew refund-42");
         while (true) {
             for (SurfaceAction a : pen.actions()) {
@@ -124,7 +124,7 @@ The renderer prints the card's two texts, `renderer: pressed approve`, and `rend
 
 - `Surface`, `SurfaceAction`, `Publish`, `PublishStatic`, and `StaticBundle`: the records an agent and a renderer exchange in a group's `views` space, with golden CBOR vectors that pin their bytes.
 - `Surfaces`: the pen that writes a surface's envelopes in order, builders for the basic catalog and for `agentspaces-viz`, and `draw` for a surface authored elsewhere.
-- `VizCatalog` and `WidgetsCatalog`: the open `agentspaces-viz` and `agentspaces-widgets` catalogs (the frame of a page: `TitleBar`, `Menu`, `Split`; the application components `Chat`, `FileTree`, `FilePreview`) and a look-and-feel schema, as JSON in the jar; their open React renderer is the package `@agentspaces/a2ui-react`. A page of the six, as `Surfaces` builds it: `titleBar("bar", "Workbench", ...)` over `split("main", "horizontal", "workbench", 720, List.of(pane("l", "tree", 0.25, 180, true, "Files"), pane("m", "preview", 0.45, 320, false, "Preview"), pane("r", "chat", 0.30, 300, true, "Chat")))`, with `fileTree("tree", "/files", ...)`, `filePreview("preview", Map.of("path", "/selected/file"), ...)` and `chat("chat", "workbench", "main", ...)` in its panes.
+- `VizCatalog` and `WidgetsCatalog`: the open `agentspaces-viz` and `agentspaces-widgets` catalogs (the frame of a page: `TitleBar`, `Menu`, `Split`; the application components `Chat`, `FileTree`, `FilePreview`) and a look-and-feel schema, as JSON in the jar; their open React renderer is the package `@agentspaces/a2ui-react`. A page of the six, as `Surfaces` builds it: `titleBar("bar", "Workbench", ...)` over `split("main", "horizontal", "workbench", 720, List.of(pane("l", "tree", 0.25, 180, true, "Files"), pane("m", "preview", 0.45, 320, false, "Preview"), pane("r", "chat", 0.30, 300, true, "Chat")))`, with `fileTree("tree", "/files", ...)`, `filePreview("preview", Map.of("@path", "/selected/file"), ...)` and `chat("chat", "workbench", "main", ...)` in its panes.
 - `ChatMessage`, `SharedFile`, `WorkingOn` and `ChatProgress` in `ai.badmonkey.agentspaces.a2ui.records`: the open records a chat, a file tree and a progress line read, with the member hint `a2ui.records=2` that gates their version 2 fields.
 - Java 21; it depends on `agentspaces-api`, `agentspaces-common`, and Jackson, and on no framework or platform.
 

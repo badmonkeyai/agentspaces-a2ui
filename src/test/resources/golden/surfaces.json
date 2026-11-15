@@ -1,12 +1,12 @@
 {
   "surfaces" : [ {
-    "catalogId" : "https://a2ui.org/specification/v0_9/catalogs/basic/catalog.json",
+    "catalogId" : "https://a2ui.org/specification/v1_0/catalogs/basic/catalog.json",
     "envelopes" : [ {
       "createSurface" : {
-        "catalogId" : "https://a2ui.org/specification/v0_9/catalogs/basic/catalog.json",
+        "catalogId" : "https://a2ui.org/specification/v1_0/catalogs/basic/catalog.json",
         "surfaceId" : "text"
       },
-      "version" : "v0.9.1"
+      "version" : "1.0"
     }, {
       "updateComponents" : {
         "components" : [ {
@@ -16,19 +16,18 @@
         }, {
           "component" : "Text",
           "id" : "title",
-          "text" : "Claims this week",
-          "variant" : "h2"
+          "text" : "## Claims this week"
         }, {
           "component" : "Text",
           "id" : "body",
           "text" : {
-            "path" : "/summary"
+            "@path" : "/summary"
           },
           "variant" : "body"
         } ],
         "surfaceId" : "text"
       },
-      "version" : "v0.9.1"
+      "version" : "1.0"
     }, {
       "updateDataModel" : {
         "path" : "/",
@@ -37,7 +36,7 @@
           "summary" : "Twelve claims opened, nine closed."
         }
       },
-      "version" : "v0.9.1"
+      "version" : "1.0"
     } ],
     "expectText" : [ "Claims this week", "Twelve claims opened, nine closed." ],
     "name" : "Text",
@@ -49,7 +48,7 @@
         "catalogId" : "agentspaces-viz",
         "surfaceId" : "chart"
       },
-      "version" : "v0.9.1"
+      "version" : "1.0"
     }, {
       "updateComponents" : {
         "components" : [ {
@@ -73,7 +72,7 @@
         } ],
         "surfaceId" : "chart"
       },
-      "version" : "v0.9.1"
+      "version" : "1.0"
     }, {
       "updateDataModel" : {
         "path" : "/",
@@ -95,7 +94,7 @@
           } ]
         }
       },
-      "version" : "v0.9.1"
+      "version" : "1.0"
     } ],
     "expectText" : [ "Spend by group", "spend", "budget", "claims-fleet", "ops" ],
     "name" : "Chart",
@@ -105,9 +104,366 @@
     "envelopes" : [ {
       "createSurface" : {
         "catalogId" : "agentspaces-viz",
+        "surfaceId" : "visualize"
+      },
+      "version" : "1.0"
+    }, {
+      "updateComponents" : {
+        "components" : [ {
+          "children" : [ "spendChart" ],
+          "component" : "Column",
+          "id" : "root"
+        }, {
+          "aggregate" : "sum",
+          "color" : "quarter",
+          "component" : "Visualize",
+          "id" : "spendChart",
+          "mark" : "column",
+          "rows" : "/spend",
+          "sort" : "-y",
+          "title" : "Spend by region",
+          "unit" : "USD",
+          "x" : "region",
+          "y" : "amount"
+        } ],
+        "surfaceId" : "visualize"
+      },
+      "version" : "1.0"
+    }, {
+      "updateDataModel" : {
+        "path" : "/",
+        "surfaceId" : "visualize",
+        "value" : {
+          "spend" : [ {
+            "amount" : 120,
+            "quarter" : "Q1",
+            "region" : "north"
+          }, {
+            "amount" : 90,
+            "quarter" : "Q2",
+            "region" : "north"
+          }, {
+            "amount" : 60,
+            "quarter" : "Q1",
+            "region" : "south"
+          }, {
+            "amount" : 15,
+            "quarter" : "Q1",
+            "region" : "south"
+          }, {
+            "amount" : 40,
+            "quarter" : "Q2",
+            "region" : "south"
+          } ]
+        }
+      },
+      "version" : "1.0"
+    } ],
+    "expectText" : [ "Spend by region", "north", "south", "Q1", "Q2" ],
+    "name" : "Visualize",
+    "state" : "full",
+    "surfaceId" : "visualize"
+  }, {
+    "catalogId" : "agentspaces-viz",
+    "envelopes" : [ {
+      "createSurface" : {
+        "catalogId" : "agentspaces-viz",
+        "surfaceId" : "visualize-empty"
+      },
+      "version" : "1.0"
+    }, {
+      "updateComponents" : {
+        "components" : [ {
+          "children" : [ "spendChart" ],
+          "component" : "Column",
+          "id" : "root"
+        }, {
+          "aggregate" : "sum",
+          "color" : "quarter",
+          "component" : "Visualize",
+          "id" : "spendChart",
+          "mark" : "column",
+          "rows" : "/spend",
+          "sort" : "-y",
+          "title" : "Spend by region",
+          "unit" : "USD",
+          "x" : "region",
+          "y" : "amount"
+        } ],
+        "surfaceId" : "visualize-empty"
+      },
+      "version" : "1.0"
+    }, {
+      "updateDataModel" : {
+        "path" : "/",
+        "surfaceId" : "visualize-empty",
+        "value" : {
+          "spend" : [ ]
+        }
+      },
+      "version" : "1.0"
+    } ],
+    "expectText" : [ "Spend by region", "No rows yet" ],
+    "name" : "Visualize",
+    "state" : "empty",
+    "surfaceId" : "visualize-empty"
+  }, {
+    "catalogId" : "agentspaces-viz",
+    "envelopes" : [ {
+      "createSurface" : {
+        "catalogId" : "agentspaces-viz",
+        "surfaceId" : "visualize-loading"
+      },
+      "version" : "1.0"
+    }, {
+      "updateComponents" : {
+        "components" : [ {
+          "children" : [ "spendChart" ],
+          "component" : "Column",
+          "id" : "root"
+        }, {
+          "aggregate" : "sum",
+          "color" : "quarter",
+          "component" : "Visualize",
+          "id" : "spendChart",
+          "mark" : "column",
+          "rows" : "/spend",
+          "sort" : "-y",
+          "title" : "Spend by region",
+          "unit" : "USD",
+          "x" : "region",
+          "y" : "amount"
+        } ],
+        "surfaceId" : "visualize-loading"
+      },
+      "version" : "1.0"
+    } ],
+    "expectText" : [ "Spend by region", "Loading the rows" ],
+    "name" : "Visualize",
+    "state" : "loading",
+    "surfaceId" : "visualize-loading"
+  }, {
+    "catalogId" : "agentspaces-viz",
+    "envelopes" : [ {
+      "createSurface" : {
+        "catalogId" : "agentspaces-viz",
+        "surfaceId" : "visualize-error"
+      },
+      "version" : "1.0"
+    }, {
+      "updateComponents" : {
+        "components" : [ {
+          "children" : [ "spendChart" ],
+          "component" : "Column",
+          "id" : "root"
+        }, {
+          "aggregate" : "sum",
+          "color" : "quarter",
+          "component" : "Visualize",
+          "id" : "spendChart",
+          "mark" : "column",
+          "rows" : "/spend",
+          "sort" : "-y",
+          "title" : "Spend by region",
+          "unit" : "USD",
+          "x" : "region",
+          "y" : "amount"
+        } ],
+        "surfaceId" : "visualize-error"
+      },
+      "version" : "1.0"
+    }, {
+      "updateDataModel" : {
+        "path" : "/",
+        "surfaceId" : "visualize-error",
+        "value" : {
+          "spend" : "not a list"
+        }
+      },
+      "version" : "1.0"
+    } ],
+    "expectText" : [ "Spend by region", "Unavailable", "do not read as a table" ],
+    "name" : "Visualize",
+    "state" : "error",
+    "surfaceId" : "visualize-error"
+  }, {
+    "catalogId" : "agentspaces-viz",
+    "envelopes" : [ {
+      "createSurface" : {
+        "catalogId" : "agentspaces-viz",
+        "surfaceId" : "graphview"
+      },
+      "version" : "1.0"
+    }, {
+      "updateComponents" : {
+        "components" : [ {
+          "children" : [ "lineage" ],
+          "component" : "Column",
+          "id" : "root"
+        }, {
+          "component" : "GraphView",
+          "edges" : "/edges",
+          "id" : "lineage",
+          "layout" : "layered",
+          "nodes" : "/nodes",
+          "title" : "Who feeds whom"
+        } ],
+        "surfaceId" : "graphview"
+      },
+      "version" : "1.0"
+    }, {
+      "updateDataModel" : {
+        "path" : "/",
+        "surfaceId" : "graphview",
+        "value" : {
+          "edges" : [ {
+            "rel" : "reads",
+            "source" : "claimsDb",
+            "target" : "registrar"
+          }, {
+            "rel" : "hands over",
+            "source" : "registrar",
+            "target" : "adjuster"
+          } ],
+          "nodes" : [ {
+            "id" : "claimsDb",
+            "kind" : "source",
+            "label" : "claims-db"
+          }, {
+            "id" : "registrar",
+            "kind" : "agent",
+            "label" : "registrar"
+          }, {
+            "id" : "adjuster",
+            "kind" : "agent",
+            "label" : "adjuster"
+          } ]
+        }
+      },
+      "version" : "1.0"
+    } ],
+    "expectText" : [ "Who feeds whom", "claims-db", "registrar", "adjuster" ],
+    "name" : "GraphView",
+    "state" : "full",
+    "surfaceId" : "graphview"
+  }, {
+    "catalogId" : "agentspaces-viz",
+    "envelopes" : [ {
+      "createSurface" : {
+        "catalogId" : "agentspaces-viz",
+        "surfaceId" : "graphview-empty"
+      },
+      "version" : "1.0"
+    }, {
+      "updateComponents" : {
+        "components" : [ {
+          "children" : [ "lineage" ],
+          "component" : "Column",
+          "id" : "root"
+        }, {
+          "component" : "GraphView",
+          "edges" : "/edges",
+          "id" : "lineage",
+          "layout" : "layered",
+          "nodes" : "/nodes",
+          "title" : "Who feeds whom"
+        } ],
+        "surfaceId" : "graphview-empty"
+      },
+      "version" : "1.0"
+    }, {
+      "updateDataModel" : {
+        "path" : "/",
+        "surfaceId" : "graphview-empty",
+        "value" : {
+          "edges" : [ ],
+          "nodes" : [ ]
+        }
+      },
+      "version" : "1.0"
+    } ],
+    "expectText" : [ "Who feeds whom", "No graph yet", "No nodes yet" ],
+    "name" : "GraphView",
+    "state" : "empty",
+    "surfaceId" : "graphview-empty"
+  }, {
+    "catalogId" : "agentspaces-viz",
+    "envelopes" : [ {
+      "createSurface" : {
+        "catalogId" : "agentspaces-viz",
+        "surfaceId" : "graphview-loading"
+      },
+      "version" : "1.0"
+    }, {
+      "updateComponents" : {
+        "components" : [ {
+          "children" : [ "lineage" ],
+          "component" : "Column",
+          "id" : "root"
+        }, {
+          "component" : "GraphView",
+          "edges" : "/edges",
+          "id" : "lineage",
+          "layout" : "layered",
+          "nodes" : "/nodes",
+          "title" : "Who feeds whom"
+        } ],
+        "surfaceId" : "graphview-loading"
+      },
+      "version" : "1.0"
+    } ],
+    "expectText" : [ "Who feeds whom", "Loading the graph" ],
+    "name" : "GraphView",
+    "state" : "loading",
+    "surfaceId" : "graphview-loading"
+  }, {
+    "catalogId" : "agentspaces-viz",
+    "envelopes" : [ {
+      "createSurface" : {
+        "catalogId" : "agentspaces-viz",
+        "surfaceId" : "graphview-error"
+      },
+      "version" : "1.0"
+    }, {
+      "updateComponents" : {
+        "components" : [ {
+          "children" : [ "lineage" ],
+          "component" : "Column",
+          "id" : "root"
+        }, {
+          "component" : "GraphView",
+          "edges" : "/edges",
+          "id" : "lineage",
+          "layout" : "layered",
+          "nodes" : "/nodes",
+          "title" : "Who feeds whom"
+        } ],
+        "surfaceId" : "graphview-error"
+      },
+      "version" : "1.0"
+    }, {
+      "updateDataModel" : {
+        "path" : "/",
+        "surfaceId" : "graphview-error",
+        "value" : {
+          "edges" : [ ],
+          "nodes" : "not a list"
+        }
+      },
+      "version" : "1.0"
+    } ],
+    "expectText" : [ "Who feeds whom", "Unavailable", "do not read as a table" ],
+    "name" : "GraphView",
+    "state" : "error",
+    "surfaceId" : "graphview-error"
+  }, {
+    "catalogId" : "agentspaces-viz",
+    "envelopes" : [ {
+      "createSurface" : {
+        "catalogId" : "agentspaces-viz",
         "surfaceId" : "datatable"
       },
-      "version" : "v0.9.1"
+      "version" : "1.0"
     }, {
       "updateComponents" : {
         "components" : [ {
@@ -130,7 +486,7 @@
         } ],
         "surfaceId" : "datatable"
       },
-      "version" : "v0.9.1"
+      "version" : "1.0"
     }, {
       "updateDataModel" : {
         "path" : "/",
@@ -145,7 +501,7 @@
           } ]
         }
       },
-      "version" : "v0.9.1"
+      "version" : "1.0"
     } ],
     "expectText" : [ "Claim", "Amount", "C-1001", "C-1002" ],
     "name" : "DataTable",
@@ -157,7 +513,7 @@
         "catalogId" : "agentspaces-viz",
         "surfaceId" : "map"
       },
-      "version" : "v0.9.1"
+      "version" : "1.0"
     }, {
       "updateComponents" : {
         "components" : [ {
@@ -197,7 +553,7 @@
         } ],
         "surfaceId" : "map"
       },
-      "version" : "v0.9.1"
+      "version" : "1.0"
     }, {
       "updateDataModel" : {
         "path" : "/",
@@ -240,7 +596,7 @@
           } ]
         }
       },
-      "version" : "v0.9.1"
+      "version" : "1.0"
     } ],
     "expectText" : [ "truck-7", "truck-9", "left Depot North" ],
     "name" : "Map",
@@ -252,7 +608,7 @@
         "catalogId" : "agentspaces-viz",
         "surfaceId" : "graph"
       },
-      "version" : "v0.9.1"
+      "version" : "1.0"
     }, {
       "updateComponents" : {
         "components" : [ {
@@ -269,7 +625,7 @@
         } ],
         "surfaceId" : "graph"
       },
-      "version" : "v0.9.1"
+      "version" : "1.0"
     }, {
       "updateDataModel" : {
         "path" : "/",
@@ -291,7 +647,7 @@
           } ]
         }
       },
-      "version" : "v0.9.1"
+      "version" : "1.0"
     } ],
     "expectText" : [ "claims-db", "registrar" ],
     "name" : "Graph",
@@ -303,7 +659,7 @@
         "catalogId" : "agentspaces-viz",
         "surfaceId" : "timeline"
       },
-      "version" : "v0.9.1"
+      "version" : "1.0"
     }, {
       "updateComponents" : {
         "components" : [ {
@@ -318,7 +674,7 @@
         } ],
         "surfaceId" : "timeline"
       },
-      "version" : "v0.9.1"
+      "version" : "1.0"
     }, {
       "updateDataModel" : {
         "path" : "/",
@@ -336,7 +692,7 @@
           "lanes" : [ "registrar", "adjuster" ]
         }
       },
-      "version" : "v0.9.1"
+      "version" : "1.0"
     } ],
     "expectText" : [ "registrar", "adjuster", "claim registered", "claim adjusted" ],
     "name" : "Timeline",
@@ -348,7 +704,7 @@
         "catalogId" : "agentspaces-viz",
         "surfaceId" : "report"
       },
-      "version" : "v0.9.1"
+      "version" : "1.0"
     }, {
       "updateComponents" : {
         "components" : [ {
@@ -367,7 +723,7 @@
         } ],
         "surfaceId" : "report"
       },
-      "version" : "v0.9.1"
+      "version" : "1.0"
     } ],
     "expectText" : [ "Weekly report", "Spend", "Spend rose", "four percent" ],
     "name" : "Report",
@@ -379,7 +735,7 @@
         "catalogId" : "agentspaces-viz",
         "surfaceId" : "notification"
       },
-      "version" : "v0.9.1"
+      "version" : "1.0"
     }, {
       "updateComponents" : {
         "components" : [ {
@@ -395,7 +751,7 @@
         } ],
         "surfaceId" : "notification"
       },
-      "version" : "v0.9.1"
+      "version" : "1.0"
     }, {
       "updateDataModel" : {
         "path" : "/",
@@ -410,7 +766,7 @@
           } ]
         }
       },
-      "version" : "v0.9.1"
+      "version" : "1.0"
     } ],
     "expectText" : [ "Three refusals in a minute", "serious", "claims-fleet" ],
     "name" : "Notification",
@@ -422,7 +778,7 @@
         "catalogId" : "agentspaces-viz",
         "surfaceId" : "form"
       },
-      "version" : "v0.9.1"
+      "version" : "1.0"
     }, {
       "updateComponents" : {
         "components" : [ {
@@ -438,7 +794,7 @@
         } ],
         "surfaceId" : "form"
       },
-      "version" : "v0.9.1"
+      "version" : "1.0"
     } ],
     "expectText" : [ "id", "amount" ],
     "name" : "Form",
@@ -450,7 +806,7 @@
         "catalogId" : "agentspaces-viz",
         "surfaceId" : "window"
       },
-      "version" : "v0.9.1"
+      "version" : "1.0"
     }, {
       "updateComponents" : {
         "components" : [ {
@@ -472,7 +828,7 @@
         } ],
         "surfaceId" : "window"
       },
-      "version" : "v0.9.1"
+      "version" : "1.0"
     }, {
       "updateDataModel" : {
         "path" : "/",
@@ -481,7 +837,7 @@
           "speed" : 42
         }
       },
-      "version" : "v0.9.1"
+      "version" : "1.0"
     } ],
     "expectText" : [ "Truck 3", "42" ],
     "name" : "Window",
@@ -493,7 +849,7 @@
         "catalogId" : "agentspaces-viz",
         "surfaceId" : "conversation"
       },
-      "version" : "v0.9.1"
+      "version" : "1.0"
     }, {
       "updateComponents" : {
         "components" : [ {
@@ -509,7 +865,7 @@
         } ],
         "surfaceId" : "conversation"
       },
-      "version" : "v0.9.1"
+      "version" : "1.0"
     }, {
       "updateDataModel" : {
         "path" : "/",
@@ -537,7 +893,7 @@
           } ]
         }
       },
-      "version" : "v0.9.1"
+      "version" : "1.0"
     } ],
     "expectText" : [ "Where is truck 7 heading?", "North on the A10" ],
     "name" : "Conversation",
@@ -549,7 +905,7 @@
         "catalogId" : "agentspaces-viz",
         "surfaceId" : "notice"
       },
-      "version" : "v0.9.1"
+      "version" : "1.0"
     }, {
       "updateComponents" : {
         "components" : [ {
@@ -566,7 +922,7 @@
         } ],
         "surfaceId" : "notice"
       },
-      "version" : "v0.9.1"
+      "version" : "1.0"
     }, {
       "updateDataModel" : {
         "path" : "/",
@@ -575,7 +931,7 @@
           "why" : "Bind a provider on the Models screen."
         }
       },
-      "version" : "v0.9.1"
+      "version" : "1.0"
     } ],
     "expectText" : [ "warning", "No model bound", "Bind a provider" ],
     "name" : "Notice",
@@ -587,7 +943,7 @@
         "catalogId" : "agentspaces-viz",
         "surfaceId" : "toolbar"
       },
-      "version" : "v0.9.1"
+      "version" : "1.0"
     }, {
       "updateComponents" : {
         "components" : [ {
@@ -609,7 +965,7 @@
         } ],
         "surfaceId" : "toolbar"
       },
-      "version" : "v0.9.1"
+      "version" : "1.0"
     } ],
     "expectText" : [ "Desk", "Refresh", "Export" ],
     "name" : "Toolbar",
@@ -621,7 +977,7 @@
         "catalogId" : "agentspaces-viz",
         "surfaceId" : "keyvalue"
       },
-      "version" : "v0.9.1"
+      "version" : "1.0"
     }, {
       "updateComponents" : {
         "components" : [ {
@@ -642,7 +998,7 @@
         } ],
         "surfaceId" : "keyvalue"
       },
-      "version" : "v0.9.1"
+      "version" : "1.0"
     }, {
       "updateDataModel" : {
         "path" : "/",
@@ -651,7 +1007,7 @@
           "open" : 42
         }
       },
-      "version" : "v0.9.1"
+      "version" : "1.0"
     } ],
     "expectText" : [ "The desk", "Open", "42", "Region", "north" ],
     "name" : "KeyValue",
@@ -663,7 +1019,7 @@
         "catalogId" : "agentspaces-viz",
         "surfaceId" : "prose"
       },
-      "version" : "v0.9.1"
+      "version" : "1.0"
     }, {
       "updateComponents" : {
         "components" : [ {
@@ -677,7 +1033,7 @@
         } ],
         "surfaceId" : "prose"
       },
-      "version" : "v0.9.1"
+      "version" : "1.0"
     }, {
       "updateDataModel" : {
         "path" : "/",
@@ -686,7 +1042,7 @@
           "notes" : "Spend rose **four percent** this week."
         }
       },
-      "version" : "v0.9.1"
+      "version" : "1.0"
     } ],
     "expectText" : [ "Spend rose", "four percent" ],
     "name" : "Prose",
@@ -698,7 +1054,7 @@
         "catalogId" : "agentspaces-viz",
         "surfaceId" : "stat"
       },
-      "version" : "v0.9.1"
+      "version" : "1.0"
     }, {
       "updateComponents" : {
         "components" : [ {
@@ -716,7 +1072,7 @@
         } ],
         "surfaceId" : "stat"
       },
-      "version" : "v0.9.1"
+      "version" : "1.0"
     }, {
       "updateDataModel" : {
         "path" : "/",
@@ -727,7 +1083,7 @@
           "openStatus" : "good"
         }
       },
-      "version" : "v0.9.1"
+      "version" : "1.0"
     } ],
     "expectText" : [ "Open claims", "42", "claims" ],
     "name" : "Stat",
@@ -739,7 +1095,7 @@
         "catalogId" : "agentspaces-viz",
         "surfaceId" : "titlebar"
       },
-      "version" : "v0.9.1"
+      "version" : "1.0"
     }, {
       "updateComponents" : {
         "components" : [ {
@@ -758,7 +1114,7 @@
           "component" : "TitleBar",
           "icon" : "briefcase",
           "id" : "bar",
-          "menu" : "bar-menu",
+          "menu" : "barMenu",
           "status" : {
             "from" : "/working",
             "labels" : {
@@ -768,11 +1124,11 @@
           },
           "subtitle" : "Claims desk",
           "title" : {
-            "path" : "/app/title"
+            "@path" : "/app/title"
           }
         }, {
           "component" : "Menu",
-          "id" : "bar-menu",
+          "id" : "barMenu",
           "items" : [ {
             "action" : {
               "name" : "chat.new"
@@ -793,7 +1149,7 @@
         } ],
         "surfaceId" : "titlebar"
       },
-      "version" : "v0.9.1"
+      "version" : "1.0"
     }, {
       "updateDataModel" : {
         "path" : "/",
@@ -813,7 +1169,7 @@
           } ]
         }
       },
-      "version" : "v0.9.1"
+      "version" : "1.0"
     } ],
     "expectText" : [ "Workbench", "Claims desk", "Agent working", "Share", "More" ],
     "name" : "TitleBar",
@@ -826,7 +1182,7 @@
         "catalogId" : "agentspaces-viz",
         "surfaceId" : "titlebar-empty"
       },
-      "version" : "v0.9.1"
+      "version" : "1.0"
     }, {
       "updateComponents" : {
         "components" : [ {
@@ -840,7 +1196,7 @@
         } ],
         "surfaceId" : "titlebar-empty"
       },
-      "version" : "v0.9.1"
+      "version" : "1.0"
     } ],
     "expectText" : [ "Workbench" ],
     "name" : "TitleBar",
@@ -853,7 +1209,7 @@
         "catalogId" : "agentspaces-viz",
         "surfaceId" : "titlebar-loading"
       },
-      "version" : "v0.9.1"
+      "version" : "1.0"
     }, {
       "updateComponents" : {
         "components" : [ {
@@ -871,12 +1227,12 @@
             }
           },
           "title" : {
-            "path" : "/app/title"
+            "@path" : "/app/title"
           }
         } ],
         "surfaceId" : "titlebar-loading"
       },
-      "version" : "v0.9.1"
+      "version" : "1.0"
     } ],
     "expectText" : [ "Loading" ],
     "name" : "TitleBar",
@@ -889,7 +1245,7 @@
         "catalogId" : "agentspaces-viz",
         "surfaceId" : "titlebar-error"
       },
-      "version" : "v0.9.1"
+      "version" : "1.0"
     }, {
       "updateComponents" : {
         "components" : [ {
@@ -910,7 +1266,7 @@
         } ],
         "surfaceId" : "titlebar-error"
       },
-      "version" : "v0.9.1"
+      "version" : "1.0"
     }, {
       "updateDataModel" : {
         "path" : "/",
@@ -927,7 +1283,7 @@
           } ]
         }
       },
-      "version" : "v0.9.1"
+      "version" : "1.0"
     } ],
     "expectText" : [ "Workbench", "The agent stopped" ],
     "name" : "TitleBar",
@@ -940,7 +1296,7 @@
         "catalogId" : "agentspaces-viz",
         "surfaceId" : "menu"
       },
-      "version" : "v0.9.1"
+      "version" : "1.0"
     }, {
       "updateComponents" : {
         "components" : [ {
@@ -962,7 +1318,7 @@
               "name" : "view.dark"
             },
             "checked" : {
-              "path" : "/view/dark"
+              "@path" : "/view/dark"
             },
             "id" : "dark",
             "label" : "Dark mode"
@@ -1004,7 +1360,7 @@
         } ],
         "surfaceId" : "menu"
       },
-      "version" : "v0.9.1"
+      "version" : "1.0"
     }, {
       "updateDataModel" : {
         "path" : "/",
@@ -1015,7 +1371,7 @@
           }
         }
       },
-      "version" : "v0.9.1"
+      "version" : "1.0"
     } ],
     "expectText" : [ "Actions" ],
     "name" : "Menu",
@@ -1028,7 +1384,7 @@
         "catalogId" : "agentspaces-viz",
         "surfaceId" : "menu-empty"
       },
-      "version" : "v0.9.1"
+      "version" : "1.0"
     }, {
       "updateComponents" : {
         "components" : [ {
@@ -1046,7 +1402,7 @@
         } ],
         "surfaceId" : "menu-empty"
       },
-      "version" : "v0.9.1"
+      "version" : "1.0"
     } ],
     "expectText" : [ "Actions", "None" ],
     "name" : "Menu",
@@ -1059,7 +1415,7 @@
         "catalogId" : "agentspaces-viz",
         "surfaceId" : "menu-loading"
       },
-      "version" : "v0.9.1"
+      "version" : "1.0"
     }, {
       "updateComponents" : {
         "components" : [ {
@@ -1077,7 +1433,7 @@
         } ],
         "surfaceId" : "menu-loading"
       },
-      "version" : "v0.9.1"
+      "version" : "1.0"
     } ],
     "expectText" : [ "Actions", "Loading" ],
     "name" : "Menu",
@@ -1090,7 +1446,7 @@
         "catalogId" : "agentspaces-viz",
         "surfaceId" : "menu-error"
       },
-      "version" : "v0.9.1"
+      "version" : "1.0"
     }, {
       "updateComponents" : {
         "components" : [ {
@@ -1108,7 +1464,7 @@
         } ],
         "surfaceId" : "menu-error"
       },
-      "version" : "v0.9.1"
+      "version" : "1.0"
     }, {
       "updateDataModel" : {
         "path" : "/",
@@ -1117,7 +1473,7 @@
           "menu" : "not a list"
         }
       },
-      "version" : "v0.9.1"
+      "version" : "1.0"
     } ],
     "expectText" : [ "Actions", "Unavailable" ],
     "name" : "Menu",
@@ -1130,7 +1486,7 @@
         "catalogId" : "agentspaces-viz",
         "surfaceId" : "split"
       },
-      "version" : "v0.9.1"
+      "version" : "1.0"
     }, {
       "updateComponents" : {
         "components" : [ {
@@ -1181,7 +1537,7 @@
         } ],
         "surfaceId" : "split"
       },
-      "version" : "v0.9.1"
+      "version" : "1.0"
     }, {
       "updateDataModel" : {
         "path" : "/",
@@ -1190,7 +1546,7 @@
           "note" : "Spend rose **four percent**."
         }
       },
-      "version" : "v0.9.1"
+      "version" : "1.0"
     } ],
     "expectText" : [ "Files", "Preview", "Chat", "notes/summary.md", "Spend rose", "Ask about a file" ],
     "name" : "Split",
@@ -1203,7 +1559,7 @@
         "catalogId" : "agentspaces-viz",
         "surfaceId" : "split-empty"
       },
-      "version" : "v0.9.1"
+      "version" : "1.0"
     }, {
       "updateComponents" : {
         "components" : [ {
@@ -1226,7 +1582,7 @@
         } ],
         "surfaceId" : "split-empty"
       },
-      "version" : "v0.9.1"
+      "version" : "1.0"
     } ],
     "expectText" : [ "Files", "Chat", "Nothing here yet" ],
     "name" : "Split",
@@ -1239,7 +1595,7 @@
         "catalogId" : "agentspaces-viz",
         "surfaceId" : "split-loading"
       },
-      "version" : "v0.9.1"
+      "version" : "1.0"
     }, {
       "updateComponents" : {
         "components" : [ {
@@ -1274,7 +1630,7 @@
         } ],
         "surfaceId" : "split-loading"
       },
-      "version" : "v0.9.1"
+      "version" : "1.0"
     } ],
     "expectText" : [ "Open claims", "Closed claims" ],
     "name" : "Split",
@@ -1287,7 +1643,7 @@
         "catalogId" : "agentspaces-viz",
         "surfaceId" : "split-error"
       },
-      "version" : "v0.9.1"
+      "version" : "1.0"
     }, {
       "updateComponents" : {
         "components" : [ {
@@ -1311,7 +1667,7 @@
         } ],
         "surfaceId" : "split-error"
       },
-      "version" : "v0.9.1"
+      "version" : "1.0"
     } ],
     "expectText" : [ "Files", "Chat", "Missing content: gone" ],
     "name" : "Split",
@@ -1324,7 +1680,7 @@
         "catalogId" : "agentspaces-widgets",
         "surfaceId" : "chat"
       },
-      "version" : "v0.9.1"
+      "version" : "1.0"
     }, {
       "updateComponents" : {
         "components" : [ {
@@ -1343,7 +1699,7 @@
         } ],
         "surfaceId" : "chat"
       },
-      "version" : "v0.9.1"
+      "version" : "1.0"
     }, {
       "updateDataModel" : {
         "path" : "/",
@@ -1412,7 +1768,7 @@
           "progress" : [ ]
         }
       },
-      "version" : "v0.9.1"
+      "version" : "1.0"
     } ],
     "expectText" : [ "workbench", "Where did we overspend in Q3?", "Travel ran", "18 percent", "q3-expenses.csv", "Send" ],
     "name" : "Chat",
@@ -1425,7 +1781,7 @@
         "catalogId" : "agentspaces-widgets",
         "surfaceId" : "chat-empty"
       },
-      "version" : "v0.9.1"
+      "version" : "1.0"
     }, {
       "updateComponents" : {
         "components" : [ {
@@ -1444,7 +1800,7 @@
         } ],
         "surfaceId" : "chat-empty"
       },
-      "version" : "v0.9.1"
+      "version" : "1.0"
     } ],
     "expectText" : [ "workbench", "No message yet", "Summarise the newest file", "Send" ],
     "name" : "Chat",
@@ -1457,7 +1813,7 @@
         "catalogId" : "agentspaces-widgets",
         "surfaceId" : "chat-loading"
       },
-      "version" : "v0.9.1"
+      "version" : "1.0"
     }, {
       "updateComponents" : {
         "components" : [ {
@@ -1476,7 +1832,7 @@
         } ],
         "surfaceId" : "chat-loading"
       },
-      "version" : "v0.9.1"
+      "version" : "1.0"
     }, {
       "updateDataModel" : {
         "path" : "/",
@@ -1527,7 +1883,7 @@
           } ]
         }
       },
-      "version" : "v0.9.1"
+      "version" : "1.0"
     } ],
     "expectText" : [ "Where did we overspend in Q3?", "working: read q3-expenses.csv" ],
     "name" : "Chat",
@@ -1540,7 +1896,7 @@
         "catalogId" : "agentspaces-widgets",
         "surfaceId" : "chat-error"
       },
-      "version" : "v0.9.1"
+      "version" : "1.0"
     }, {
       "updateComponents" : {
         "components" : [ {
@@ -1559,7 +1915,7 @@
         } ],
         "surfaceId" : "chat-error"
       },
-      "version" : "v0.9.1"
+      "version" : "1.0"
     }, {
       "updateDataModel" : {
         "path" : "/",
@@ -1610,7 +1966,7 @@
           } ]
         }
       },
-      "version" : "v0.9.1"
+      "version" : "1.0"
     } ],
     "expectText" : [ "Where did we overspend in Q3?", "The agent stopped", "Retry" ],
     "name" : "Chat",
@@ -1623,7 +1979,7 @@
         "catalogId" : "agentspaces-widgets",
         "surfaceId" : "filetree"
       },
-      "version" : "v0.9.1"
+      "version" : "1.0"
     }, {
       "updateComponents" : {
         "components" : [ {
@@ -1641,7 +1997,7 @@
         } ],
         "surfaceId" : "filetree"
       },
-      "version" : "v0.9.1"
+      "version" : "1.0"
     }, {
       "updateDataModel" : {
         "path" : "/",
@@ -1686,7 +2042,7 @@
           } ]
         }
       },
-      "version" : "v0.9.1"
+      "version" : "1.0"
     } ],
     "expectText" : [ "Files", "data", "q3-expenses.csv", "notes", "overspend.md", "workbench" ],
     "name" : "FileTree",
@@ -1699,7 +2055,7 @@
         "catalogId" : "agentspaces-widgets",
         "surfaceId" : "filetree-empty"
       },
-      "version" : "v0.9.1"
+      "version" : "1.0"
     }, {
       "updateComponents" : {
         "components" : [ {
@@ -1717,7 +2073,7 @@
         } ],
         "surfaceId" : "filetree-empty"
       },
-      "version" : "v0.9.1"
+      "version" : "1.0"
     }, {
       "updateDataModel" : {
         "path" : "/",
@@ -1726,7 +2082,7 @@
           "files" : [ ]
         }
       },
-      "version" : "v0.9.1"
+      "version" : "1.0"
     } ],
     "expectText" : [ "Files", "No file yet", "Upload" ],
     "name" : "FileTree",
@@ -1739,7 +2095,7 @@
         "catalogId" : "agentspaces-widgets",
         "surfaceId" : "filetree-loading"
       },
-      "version" : "v0.9.1"
+      "version" : "1.0"
     }, {
       "updateComponents" : {
         "components" : [ {
@@ -1757,7 +2113,7 @@
         } ],
         "surfaceId" : "filetree-loading"
       },
-      "version" : "v0.9.1"
+      "version" : "1.0"
     } ],
     "expectText" : [ "Files", "Loading files" ],
     "name" : "FileTree",
@@ -1770,7 +2126,7 @@
         "catalogId" : "agentspaces-widgets",
         "surfaceId" : "filetree-error"
       },
-      "version" : "v0.9.1"
+      "version" : "1.0"
     }, {
       "updateComponents" : {
         "components" : [ {
@@ -1788,7 +2144,7 @@
         } ],
         "surfaceId" : "filetree-error"
       },
-      "version" : "v0.9.1"
+      "version" : "1.0"
     }, {
       "updateDataModel" : {
         "path" : "/",
@@ -1797,7 +2153,7 @@
           "files" : "not a list"
         }
       },
-      "version" : "v0.9.1"
+      "version" : "1.0"
     } ],
     "expectText" : [ "Files", "Unavailable" ],
     "name" : "FileTree",
@@ -1810,7 +2166,7 @@
         "catalogId" : "agentspaces-widgets",
         "surfaceId" : "filepreview"
       },
-      "version" : "v0.9.1"
+      "version" : "1.0"
     }, {
       "updateComponents" : {
         "components" : [ {
@@ -1820,14 +2176,14 @@
         }, {
           "component" : "FilePreview",
           "file" : {
-            "path" : "/selected/file"
+            "@path" : "/selected/file"
           },
           "files" : "/files",
           "id" : "preview"
         } ],
         "surfaceId" : "filepreview"
       },
-      "version" : "v0.9.1"
+      "version" : "1.0"
     }, {
       "updateDataModel" : {
         "path" : "/",
@@ -1865,7 +2221,7 @@
           }
         }
       },
-      "version" : "v0.9.1"
+      "version" : "1.0"
     } ],
     "expectText" : [ "q3-expenses.csv", "text/csv", "1.8 KiB", "Download" ],
     "name" : "FilePreview",
@@ -1878,7 +2234,7 @@
         "catalogId" : "agentspaces-widgets",
         "surfaceId" : "filepreview-empty"
       },
-      "version" : "v0.9.1"
+      "version" : "1.0"
     }, {
       "updateComponents" : {
         "components" : [ {
@@ -1888,14 +2244,14 @@
         }, {
           "component" : "FilePreview",
           "file" : {
-            "path" : "/selected/file"
+            "@path" : "/selected/file"
           },
           "files" : "/files",
           "id" : "preview"
         } ],
         "surfaceId" : "filepreview-empty"
       },
-      "version" : "v0.9.1"
+      "version" : "1.0"
     }, {
       "updateDataModel" : {
         "path" : "/",
@@ -1917,7 +2273,7 @@
           } ]
         }
       },
-      "version" : "v0.9.1"
+      "version" : "1.0"
     } ],
     "expectText" : [ "Pick a file to preview" ],
     "name" : "FilePreview",
@@ -1930,7 +2286,7 @@
         "catalogId" : "agentspaces-widgets",
         "surfaceId" : "filepreview-loading"
       },
-      "version" : "v0.9.1"
+      "version" : "1.0"
     }, {
       "updateComponents" : {
         "components" : [ {
@@ -1940,14 +2296,14 @@
         }, {
           "component" : "FilePreview",
           "file" : {
-            "path" : "/selected/file"
+            "@path" : "/selected/file"
           },
           "files" : "/files",
           "id" : "preview"
         } ],
         "surfaceId" : "filepreview-loading"
       },
-      "version" : "v0.9.1"
+      "version" : "1.0"
     }, {
       "updateDataModel" : {
         "path" : "/",
@@ -1958,7 +2314,7 @@
           }
         }
       },
-      "version" : "v0.9.1"
+      "version" : "1.0"
     } ],
     "expectText" : [ "Loading" ],
     "name" : "FilePreview",
@@ -1971,7 +2327,7 @@
         "catalogId" : "agentspaces-widgets",
         "surfaceId" : "filepreview-error"
       },
-      "version" : "v0.9.1"
+      "version" : "1.0"
     }, {
       "updateComponents" : {
         "components" : [ {
@@ -1981,14 +2337,14 @@
         }, {
           "component" : "FilePreview",
           "file" : {
-            "path" : "/selected/file"
+            "@path" : "/selected/file"
           },
           "files" : "/files",
           "id" : "preview"
         } ],
         "surfaceId" : "filepreview-error"
       },
-      "version" : "v0.9.1"
+      "version" : "1.0"
     }, {
       "updateDataModel" : {
         "path" : "/",
@@ -2013,7 +2369,7 @@
           }
         }
       },
-      "version" : "v0.9.1"
+      "version" : "1.0"
     } ],
     "expectText" : [ "q3-expenses.csv", "Too large to preview", "Download" ],
     "name" : "FilePreview",
