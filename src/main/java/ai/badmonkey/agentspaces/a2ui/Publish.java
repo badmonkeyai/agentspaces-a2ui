@@ -34,8 +34,8 @@ import java.util.Objects;
  * Publish. Two more keys lay out a page: {@link #NAVIGATION} draws the surfaces as pages a person moves between,
  * as tabs or a rail, the current page in the URL fragment ({@link #navigation}); {@link #LAYOUT} places whole surfaces
  * in the panes of a split ({@link #layout}), or lays the page out as a conversation ({@link #conversation}): a top bar
- * with the app's areas, a chat on the left that grows down the page, and the current area's surface on the right. A
- * Publish without them draws its surfaces stacked. Version 1.
+ * with the app's areas, a chat on the left that grows down the page, the current area's surface on the right, and an
+ * optional {@link #BANNER} line at the page's top and foot. A Publish without them draws its surfaces stacked. Version 1.
  */
 public record Publish(int schemaVersion, String app, String from, List<String> surfaces, String title, String host, String signOn,
                       Map<String, Object> options, Instant at) {
@@ -50,6 +50,14 @@ public record Publish(int schemaVersion, String app, String from, List<String> s
      * bar (a section, a place, a mode). Optional; it rides inside {@code options.layout}, so no entry carries a new field.
      */
     public static final String KICKER = "kicker";
+    /**
+     * In a {@link #conversation} layout map: one line of plain text a host draws centred at the very top of the page,
+     * above the bar, and again at its very foot (a marking a page must carry, a notice every reader must see). Optional;
+     * like the {@link #KICKER} it rides inside {@code options.layout}, and the field names no marking scheme.
+     */
+    public static final String BANNER = "banner";
+    /** The longest {@link #BANNER}, in characters: one line on a narrow page. */
+    public static final int BANNER_MAX = 120;
 
     public Publish {
         Objects.requireNonNull(app, "app");
@@ -124,6 +132,15 @@ public record Publish(int schemaVersion, String app, String from, List<String> s
 
     /** A {@link #conversation} with a {@link #KICKER} above the title in its bar (blank for none). */
     public static Map<String, Object> conversation(String chat, double size, List<Map<String, Object>> areas, String kicker) {
+        return conversation(chat, size, areas, kicker, "");
+    }
+
+    /**
+     * A {@link #conversation} with a {@link #KICKER} and a {@link #BANNER} (each blank for none): the banner's trimmed
+     * words, one line of at most {@link #BANNER_MAX} characters, which the host draws at the top and the foot of the
+     * page. A line break or a longer line is refused here, since a host would draw it as one cut line.
+     */
+    public static Map<String, Object> conversation(String chat, double size, List<Map<String, Object>> areas, String kicker, String banner) {
         if (chat == null || chat.isBlank()) {
             throw new IllegalArgumentException("a conversation names the chat's page");
         }
@@ -137,7 +154,24 @@ public record Publish(int schemaVersion, String app, String from, List<String> s
         if (s < 0.2 || s > 0.6) {
             throw new IllegalArgumentException("a conversation's chat takes 0.2 to 0.6 of the width: " + size);
         }
-        return withKicker(Map.of("kind", "conversation", "chat", chat, "size", s, "areas", List.copyOf(areas)), kicker);
+        return withBanner(withKicker(Map.of("kind", "conversation", "chat", chat, "size", s, "areas", List.copyOf(areas)), kicker), banner);
+    }
+
+    /** A layout map as it is without a banner, else with the banner's trimmed words under {@link #BANNER}, checked. */
+    private static Map<String, Object> withBanner(Map<String, Object> layout, String banner) {
+        if (banner == null || banner.isBlank()) {
+            return layout;
+        }
+        String words = banner.strip();
+        if (words.chars().anyMatch(Character::isISOControl)) {
+            throw new IllegalArgumentException("a banner is one line of text, with no line break or control character: " + words.replaceAll("\\p{Cntrl}", " "));
+        }
+        if (words.codePointCount(0, words.length()) > BANNER_MAX) {
+            throw new IllegalArgumentException("a banner is at most " + BANNER_MAX + " characters: " + words.codePointCount(0, words.length()));
+        }
+        Map<String, Object> m = new LinkedHashMap<>(layout);
+        m.put(BANNER, words);
+        return Map.copyOf(m);
     }
 
     /** Where a GeoLayout window opens: against a side (two on one side stack), or free over the map. */

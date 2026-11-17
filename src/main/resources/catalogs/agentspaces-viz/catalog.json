@@ -238,7 +238,12 @@
           "default": 50
         },
         "rowAction": {
-          "type": "string"
+          "type": "string",
+          "description": "the action a row's button dispatches with {row}"
+        },
+        "rowActionLabel": {
+          "type": "string",
+          "description": "the words on each row's button; the action's name when absent. The button's accessible name adds the row's first column, so a screen reader tells the rows' buttons apart"
         },
         "id": {
           "$ref": "#/$defs/ComponentId",
@@ -408,17 +413,19 @@
       "additionalProperties": false
     },
     "Graph": {
-      "description": "Nodes and edges bound to the data model, laid out in columns, by force, or as a tree; a node action.",
+      "description": "Nodes and edges bound to the data model, laid out in columns, by force, or as a tree; a node action. Rows marked lit: true light a path: a lit node draws lit, and when any edge row is lit an edge lights only when it is lit, hovered, or touches the hovered or focused node; a lit node's and a lit edge's accessible text add \", on the path\".",
       "type": "object",
       "properties": {
         "component": {
           "const": "Graph"
         },
         "nodes": {
-          "type": "string"
+          "type": "string",
+          "description": "the path of the node rows: id, title, sub, column or kind, and lit: true for a node on the path"
         },
         "edges": {
-          "type": "string"
+          "type": "string",
+          "description": "the path of the edge rows: from, to, label, and lit: true for an edge on the path; when any edge row is lit, the other edges light only on hover or focus of a node they touch"
         },
         "layout": {
           "enum": [
@@ -467,7 +474,7 @@
       "additionalProperties": false
     },
     "GraphView": {
-      "description": "A graph of nodes and edges: a nodes table (id, label, kind) and an edges table (source, target, rel), or GeoFeatures with their links, laid out by force, as a tree, or in layers. A person pans, zooms, drags a node, and clicks one to select it; a node whose id is a GeoFeature's selects that feature on the map. Nodes are coloured by kind from the look in fixed order, with a legend.",
+      "description": "A graph of nodes and edges: a nodes table (id, label, kind) and an edges table (source, target, rel), or GeoFeatures with their links, laid out by force, as a tree, or in layers. A person pans, zooms, drags a node, and clicks one to select it; a node whose id is a GeoFeature's selects that feature on the map. Nodes are coloured by kind from the look in fixed order, with a legend. Rows marked lit: true light a path: lit nodes draw in the selected style and lit edges with the accent stroke, beside a person's own selection, and a lit node's and a lit edge's accessible text add \", on the path\".",
       "type": "object",
       "properties": {
         "component": {
@@ -475,11 +482,11 @@
         },
         "nodes": {
           "type": "string",
-          "description": "the nodes table in the data model: rows with id, label and kind"
+          "description": "the nodes table in the data model: rows with id, label and kind, and lit: true for a node on the path"
         },
         "edges": {
           "type": "string",
-          "description": "the edges table: rows with source, target and rel"
+          "description": "the edges table: rows with source, target and rel, and lit: true for an edge on the path"
         },
         "features": {
           "type": "string",

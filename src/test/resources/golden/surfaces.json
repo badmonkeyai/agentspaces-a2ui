@@ -461,6 +461,79 @@
     "envelopes" : [ {
       "createSurface" : {
         "catalogId" : "agentspaces-viz",
+        "surfaceId" : "graphview-lit"
+      },
+      "version" : "1.0"
+    }, {
+      "updateComponents" : {
+        "components" : [ {
+          "children" : [ "path" ],
+          "component" : "Column",
+          "id" : "root"
+        }, {
+          "component" : "GraphView",
+          "edges" : "/edges",
+          "id" : "path",
+          "layout" : "layered",
+          "nodes" : "/nodes",
+          "title" : "Why the claim is held"
+        } ],
+        "surfaceId" : "graphview-lit"
+      },
+      "version" : "1.0"
+    }, {
+      "updateDataModel" : {
+        "path" : "/",
+        "surfaceId" : "graphview-lit",
+        "value" : {
+          "edges" : [ {
+            "lit" : true,
+            "rel" : "held for",
+            "source" : "claim",
+            "target" : "receipt"
+          }, {
+            "lit" : true,
+            "rel" : "required by",
+            "source" : "receipt",
+            "target" : "policy"
+          }, {
+            "rel" : "charged to",
+            "source" : "claim",
+            "target" : "travel"
+          } ],
+          "nodes" : [ {
+            "id" : "claim",
+            "kind" : "claim",
+            "label" : "Claim C-1001",
+            "lit" : true
+          }, {
+            "id" : "receipt",
+            "kind" : "finding",
+            "label" : "Missing receipt",
+            "lit" : true
+          }, {
+            "id" : "policy",
+            "kind" : "source",
+            "label" : "Receipts policy",
+            "lit" : true
+          }, {
+            "id" : "travel",
+            "kind" : "finding",
+            "label" : "Travel budget"
+          } ]
+        }
+      },
+      "version" : "1.0"
+    } ],
+    "expectText" : [ "Why the claim is held", "Claim C-1001", "Missing receipt", "Receipts policy", "Travel budget" ],
+    "name" : "GraphView",
+    "state" : "lit",
+    "surfaceId" : "graphview-lit"
+  }, {
+    "catalogId" : "agentspaces-viz",
+    "envelopes" : [ {
+      "createSurface" : {
+        "catalogId" : "agentspaces-viz",
         "surfaceId" : "datatable"
       },
       "version" : "1.0"
@@ -601,6 +674,129 @@
     "expectText" : [ "truck-7", "truck-9", "left Depot North" ],
     "name" : "Map",
     "surfaceId" : "map"
+  }, {
+    "catalogId" : "agentspaces-viz",
+    "envelopes" : [ {
+      "createSurface" : {
+        "catalogId" : "agentspaces-viz",
+        "surfaceId" : "datatable-labelled"
+      },
+      "version" : "1.0"
+    }, {
+      "updateComponents" : {
+        "components" : [ {
+          "children" : [ "pages" ],
+          "component" : "Column",
+          "id" : "root"
+        }, {
+          "columns" : [ {
+            "key" : "title",
+            "title" : "Page"
+          }, {
+            "key" : "site",
+            "title" : "Site"
+          } ],
+          "component" : "DataTable",
+          "id" : "pages",
+          "rowAction" : "pages.add",
+          "rowActionLabel" : "Add the page",
+          "rows" : "/pages"
+        } ],
+        "surfaceId" : "datatable-labelled"
+      },
+      "version" : "1.0"
+    }, {
+      "updateDataModel" : {
+        "path" : "/",
+        "surfaceId" : "datatable-labelled",
+        "value" : {
+          "pages" : [ {
+            "site" : "docs.example.com",
+            "title" : "Claims handbook"
+          }, {
+            "site" : "docs.example.com",
+            "title" : "Receipts policy"
+          } ]
+        }
+      },
+      "version" : "1.0"
+    } ],
+    "expectText" : [ "Page", "Site", "Claims handbook", "Receipts policy", "Add the page" ],
+    "name" : "DataTable",
+    "state" : "labelled",
+    "surfaceId" : "datatable-labelled"
+  }, {
+    "catalogId" : "agentspaces-viz",
+    "envelopes" : [ {
+      "createSurface" : {
+        "catalogId" : "agentspaces-viz",
+        "surfaceId" : "graph-lit"
+      },
+      "version" : "1.0"
+    }, {
+      "updateComponents" : {
+        "components" : [ {
+          "children" : [ "route" ],
+          "component" : "Column",
+          "id" : "root"
+        }, {
+          "component" : "Graph",
+          "edges" : "/edges",
+          "id" : "route",
+          "layout" : "columns",
+          "nodes" : "/nodes"
+        } ],
+        "surfaceId" : "graph-lit"
+      },
+      "version" : "1.0"
+    }, {
+      "updateDataModel" : {
+        "path" : "/",
+        "surfaceId" : "graph-lit",
+        "value" : {
+          "edges" : [ {
+            "from" : "claim",
+            "label" : "held for",
+            "lit" : true,
+            "to" : "receipt"
+          }, {
+            "from" : "receipt",
+            "label" : "required by",
+            "lit" : true,
+            "to" : "policy"
+          }, {
+            "from" : "claim",
+            "label" : "charged to",
+            "to" : "travel"
+          } ],
+          "nodes" : [ {
+            "column" : "asked",
+            "id" : "claim",
+            "lit" : true,
+            "title" : "Claim C-1001"
+          }, {
+            "column" : "found",
+            "id" : "receipt",
+            "lit" : true,
+            "title" : "Missing receipt"
+          }, {
+            "column" : "source",
+            "id" : "policy",
+            "lit" : true,
+            "title" : "Receipts policy"
+          }, {
+            "column" : "found",
+            "id" : "travel",
+            "title" : "Travel budget"
+          } ]
+        }
+      },
+      "version" : "1.0"
+    } ],
+    "expectText" : [ "Claim C-1001", "Missing receipt", "Receipts policy", "Travel budget", "held for, on the path" ],
+    "name" : "Graph",
+    "state" : "lit",
+    "surfaceId" : "graph-lit"
   }, {
     "catalogId" : "agentspaces-viz",
     "envelopes" : [ {
@@ -1972,6 +2168,108 @@
     "name" : "Chat",
     "state" : "error",
     "surfaceId" : "chat-error"
+  }, {
+    "catalogId" : "agentspaces-widgets",
+    "envelopes" : [ {
+      "createSurface" : {
+        "catalogId" : "agentspaces-widgets",
+        "surfaceId" : "chat-followups"
+      },
+      "version" : "1.0"
+    }, {
+      "updateComponents" : {
+        "components" : [ {
+          "children" : [ "chat" ],
+          "component" : "Column",
+          "id" : "root"
+        }, {
+          "agent" : "workbench",
+          "component" : "Chat",
+          "controls" : [ "copy", "feedback" ],
+          "format" : "text/markdown",
+          "id" : "chat",
+          "key" : "main",
+          "suggestions" : {
+            "@path" : "/followups"
+          }
+        } ],
+        "surfaceId" : "chat-followups"
+      },
+      "version" : "1.0"
+    }, {
+      "updateDataModel" : {
+        "path" : "/",
+        "surfaceId" : "chat-followups",
+        "value" : {
+          "conversations" : [ {
+            "at" : "2026-11-10T09:00:30Z",
+            "attachments" : [ "f-q3" ],
+            "from" : {
+              "kind" : "person",
+              "name" : "ana",
+              "peer" : ""
+            },
+            "id" : "m-1",
+            "inReplyTo" : "",
+            "key" : "main",
+            "schemaVersion" : 1,
+            "text" : "Where did we overspend in Q3?"
+          }, {
+            "at" : "2026-11-10T09:01:00Z",
+            "attachments" : [ ],
+            "cites" : [ {
+              "file" : "f-q3",
+              "name" : "q3-expenses.csv",
+              "path" : "data/q3-expenses.csv"
+            } ],
+            "format" : "text/markdown",
+            "from" : {
+              "kind" : "agent",
+              "name" : "workbench",
+              "peer" : ""
+            },
+            "id" : "m-2",
+            "inReplyTo" : "m-1",
+            "key" : "main",
+            "schemaVersion" : 2,
+            "text" : "Travel ran **18 percent** over its budget."
+          } ],
+          "files" : [ {
+            "at" : "2026-11-10T09:00:00Z",
+            "by" : "ana",
+            "bytes" : 1840,
+            "id" : "f-q3",
+            "mediaType" : "text/csv",
+            "name" : "q3-expenses.csv",
+            "path" : "data/q3-expenses.csv",
+            "replaces" : "",
+            "root" : "r-q3",
+            "schemaVersion" : 2,
+            "sha256" : "sha256:00",
+            "sharedWith" : [ ]
+          } ],
+          "followups" : [ {
+            "line" : "m-2",
+            "text" : "Which receipts are missing?"
+          }, {
+            "label" : "Travel claims over budget",
+            "line" : "m-2",
+            "text" : "Which travel claims of Q3 ran over their budget, which receipts does each lack, and who approved each of them?"
+          }, {
+            "text" : "What does the receipts policy say?"
+          }, {
+            "line" : "m-0",
+            "text" : "What was the Q2 total?"
+          } ],
+          "progress" : [ ]
+        }
+      },
+      "version" : "1.0"
+    } ],
+    "expectText" : [ "Travel ran", "Which receipts are missing?", "Travel claims over budget", "What does the receipts policy say?" ],
+    "name" : "Chat",
+    "state" : "followups",
+    "surfaceId" : "chat-followups"
   }, {
     "catalogId" : "agentspaces-widgets",
     "envelopes" : [ {

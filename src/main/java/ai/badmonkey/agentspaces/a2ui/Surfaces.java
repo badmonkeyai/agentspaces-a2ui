@@ -364,11 +364,28 @@ public final class Surfaces {
     }
 
     public static Map<String, Object> dataTable(String id, List<Map<String, Object>> columns, String rows, String rowAction) {
+        return dataTable(id, columns, rows, rowAction, "");
+    }
+
+    /**
+     * A {@link #dataTable} whose row button reads {@code rowActionLabel} (blank for the action's name, as before), since
+     * a person reads "Open" or "Add the page" where the action's name ({@code claims.open}) means nothing to them. The
+     * renderer adds the row's first column to the button's accessible name. A label names the button of a
+     * {@code rowAction}, so a label with no action is refused here rather than drawn as nothing.
+     */
+    public static Map<String, Object> dataTable(String id, List<Map<String, Object>> columns, String rows, String rowAction, String rowActionLabel) {
         Map<String, Object> m = viz(id, "DataTable");
         m.put("columns", List.copyOf(columns));
         m.put("rows", rows);
-        if (rowAction != null && !rowAction.isBlank()) {
+        boolean action = rowAction != null && !rowAction.isBlank();
+        if (action) {
             m.put("rowAction", rowAction);
+        }
+        if (rowActionLabel != null && !rowActionLabel.isBlank()) {
+            if (!action) {
+                throw new IllegalArgumentException("a DataTable's rowActionLabel names the button of a rowAction, and " + id + " has none");
+            }
+            m.put("rowActionLabel", rowActionLabel.strip());
         }
         return checked(m);
     }
@@ -730,14 +747,39 @@ public final class Surfaces {
      * ({@code reads}, {@code progress}, {@code files}, {@code suggestions}, {@code placeholder}, {@code attach},
      * {@code format}, {@code controls}, {@code max}, {@code preview}, {@code writeAction}), each checked against the
      * catalog, so a word it does not take (a control of {@code delete}) fails here and not at the feed.
+     *
+     * <p>{@code suggestions} is a list of strings or a data binding ({@code Map.of("@path", "/followups")}) to rows
+     * the agent writes, each a string or {@code {text, label, line}}, so the chips follow the latest answer. It is one
+     * or the other, never both, since the catalog's property is one of the two shapes; a binding is checked as every
+     * binding is, so v0.9.1's {@code {"path": ...}} is refused here.
      */
     public static Map<String, Object> chat(String id, String agent, String key, Map<String, Object> options) {
         WidgetsCatalog.check("Chat", options);
+        suggestions(options.get("suggestions"));
         Map<String, Object> m = viz(id, "Chat");
         putText(m, "agent", agent);
         m.put("key", key == null ? "" : key);
         m.putAll(new java.util.TreeMap<>(options));
         return checked(m);
+    }
+
+    /**
+     * Refuses a Chat {@code suggestions} the catalog's {@code oneOf} would refuse at the feed: anything but a list of
+     * strings or 1.0's {@code {"@path": "/..."}} binding alone. v0.9.1's {@code {"path": ...}} is named by the binding
+     * check, as everywhere else.
+     */
+    private static void suggestions(Object value) {
+        if (value == null) {
+            return;
+        }
+        binding("Chat.suggestions", value);   // an old form named where it sits, as every builder names it
+        if (value instanceof List<?> list && list.stream().allMatch(v -> v instanceof String)) {
+            return;
+        }
+        if (value instanceof Map<?, ?> m && m.size() == 1 && m.get("@path") instanceof String path && path.startsWith("/")) {
+            return;
+        }
+        throw new IllegalArgumentException("Chat.suggestions is a list of strings or one binding {\"@path\": \"/...\"} to the agent's rows, not " + value);
     }
 
     /**

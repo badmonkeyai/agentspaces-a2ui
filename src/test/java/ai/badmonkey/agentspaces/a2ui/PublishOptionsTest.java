@@ -92,6 +92,28 @@ class PublishOptionsTest {
     }
 
     @Test
+    void aBannerRidesInTheConversationLayoutAtTheTopAndTheFoot() {
+        // AF-18: one optional line the host draws at the page's top and foot; inside options.layout, like the kicker
+        List<Map<String, Object>> areas = List.of(Publish.area("a", "A", ""));
+        Map<String, Object> layout = Publish.conversation("chat", 0.36, areas, "Desk", "  Internal use only  ");
+        assertThat(layout).isEqualTo(Map.of("kind", "conversation", "chat", "chat", "size", 0.36, "areas", List.of(Map.of("page", "a", "label", "A")),
+                Publish.KICKER, "Desk", Publish.BANNER, "Internal use only"));
+        assertThat(Publish.conversation("chat", 0.4, areas, "", "Internal use only")).containsEntry(Publish.BANNER, "Internal use only").doesNotContainKey(Publish.KICKER);
+        // empty or absent draws nothing, so the layout map is the one without it
+        for (String none : java.util.Arrays.asList("", "   ", null)) {
+            assertThat(Publish.conversation("chat", 0.4, areas, "Desk", none)).as("banner " + none).isEqualTo(Publish.conversation("chat", 0.4, areas, "Desk"))
+                    .doesNotContainKey(Publish.BANNER);
+        }
+        assertThat(Publish.BANNER).isEqualTo("banner");
+        String longest = "x".repeat(Publish.BANNER_MAX);
+        assertThat(Publish.conversation("chat", 0.4, areas, "", longest)).containsEntry(Publish.BANNER, longest);
+        assertThatThrownBy(() -> Publish.conversation("chat", 0.4, areas, "", longest + "y")).hasMessageContaining("at most 120");
+        assertThatThrownBy(() -> Publish.conversation("chat", 0.4, areas, "", "Line one\nLine two")).hasMessageContaining("one line");
+        // the other checks still come first
+        assertThatThrownBy(() -> Publish.conversation("", 0.4, areas, "", "Internal use only")).hasMessageContaining("chat");
+    }
+
+    @Test
     void aPublishCarriesThemInItsOptions() {
         Map<String, Object> options = Map.of(Publish.NAVIGATION, Publish.navigation("tabs", List.of(Publish.navPage("claims", "Claims", ""))));
         Publish p = new Publish(Publish.VERSION, "desk", "", List.of("claims"), "Desk", "", "idp", options, Instant.EPOCH);

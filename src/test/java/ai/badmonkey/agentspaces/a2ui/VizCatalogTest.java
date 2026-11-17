@@ -198,6 +198,12 @@ class VizCatalogTest {
         pin("surface_viz_map_cbor", map, Surface.class);
         Publish publish = new Publish(Publish.VERSION, "app-ops", "view-agent", List.of("spend", "overview"), "Operations", "", "idp", Map.of(), AT);
         pin("publish_cbor", publish, Publish.class);
+        // AF-18: a conversation layout with a banner, the fifth golden of the follow-ups ticket
+        Publish banner = new Publish(Publish.VERSION, "app-desk", "desk-agent", List.of("chat", "answer", "about"), "Claims desk", "", "idp",
+                Map.of(Publish.LAYOUT, Publish.conversation("chat", 0.36, List.of(Publish.area("answer", "Answer", "file"), Publish.area("about", "About", "")),
+                        "Claims", "Internal use only | Do not forward")), AT);
+        pin("publish_conversation_banner_cbor", banner, Publish.class);
+        assertThat(((Map<?, ?>) banner.options().get(Publish.LAYOUT)).get(Publish.BANNER)).isEqualTo("Internal use only | Do not forward");
         assertThat(Publish.SIGN_ONS).containsExactly("idp", "none");
         assertThat(new Publish(Publish.VERSION, "a", null, null, null, null, null, null, AT).signOn()).isEqualTo("idp");
         assertThatThrownBy(() -> new Publish(Publish.VERSION, "a", "", List.of(), "t", "", "password", Map.of(), AT)).hasMessageContaining("signOn");
@@ -235,6 +241,17 @@ class VizCatalogTest {
                         "areas", List.of(Map.of("id", "depot", "name", "Depot North", "polygon", List.of(List.of(51.52, -0.14), List.of(51.52, -0.10), List.of(51.48, -0.10), List.of(51.48, -0.14)))),
                         "alerts", List.of(Map.of("id", "a-1", "key", "truck-9", "severity", "serious", "title", "truck-9 left Depot North", "at", "2026-11-07T08:01:00Z")),
                         "highlight", List.of("truck-9")), List.of("truck-7", "truck-9", "left Depot North")));
+        // AF-16: a DataTable whose row button reads its label, and a Graph that lights one path
+        surfaces.add(golden("DataTable", "labelled", VizCatalog.ID, List.of(Surfaces.dataTable("pages", List.of(Map.of("key", "title", "title", "Page"), Map.of("key", "site", "title", "Site")),
+                        "/pages", "pages.add", "Add the page")),
+                Map.of("pages", List.of(Map.of("title", "Claims handbook", "site", "docs.example.com"), Map.of("title", "Receipts policy", "site", "docs.example.com"))),
+                List.of("Page", "Site", "Claims handbook", "Receipts policy", "Add the page")));
+        surfaces.add(golden("Graph", "lit", VizCatalog.ID, List.of(Surfaces.graph("route", "/nodes", "/edges", "columns", "")),
+                Map.of("nodes", List.of(Map.of("id", "claim", "title", "Claim C-1001", "column", "asked", "lit", true), Map.of("id", "receipt", "title", "Missing receipt", "column", "found", "lit", true),
+                                Map.of("id", "policy", "title", "Receipts policy", "column", "source", "lit", true), Map.of("id", "travel", "title", "Travel budget", "column", "found")),
+                        "edges", List.of(Map.of("from", "claim", "to", "receipt", "label", "held for", "lit", true), Map.of("from", "receipt", "to", "policy", "label", "required by", "lit", true),
+                                Map.of("from", "claim", "to", "travel", "label", "charged to"))),
+                List.of("Claim C-1001", "Missing receipt", "Receipts policy", "Travel budget", "held for, on the path")));
         surfaces.add(golden("Graph", VizCatalog.ID, List.of(Surfaces.graph("lineage", "/nodes", "/edges", "columns", "open")),
                 Map.of("nodes", List.of(Map.of("id", "claims-db", "title", "claims-db", "column", "source"), Map.of("id", "registrar", "title", "registrar", "column", "agent")), "edges", List.of(Map.of("from", "claims-db", "to", "registrar", "label", "reads"))),
                 List.of("claims-db", "registrar")));
@@ -275,9 +292,13 @@ class VizCatalogTest {
         assertThat(json).as("the golden surfaces are pinned; delete the file to regenerate").isEqualTo(Files.readString(golden, StandardCharsets.UTF_8));
         assertThat(surfaces).extracting(m -> m.get("name")).contains("Text").containsAll(VizCatalog.COMPONENTS);
         for (String frame : List.of("Visualize", "GraphView", "TitleBar", "Menu", "Split", "Chat", "FileTree", "FilePreview")) {
+            // the four states first; a variant after them shows one more way to use the component (Chat's follow-ups, GraphView's lit path)
             assertThat(surfaces.stream().filter(g -> frame.equals(g.get("name"))).map(g -> g.get("state")).toList()).as(frame + " in four states")
-                    .containsExactly("full", "empty", "loading", "error");
+                    .startsWith("full", "empty", "loading", "error");
         }
+        assertThat(surfaces.stream().filter(g -> "followups".equals(g.get("state")) || "lit".equals(g.get("state")) || "labelled".equals(g.get("state")))
+                .map(g -> g.get("name") + "/" + g.get("state")).toList()).as("AF-16's goldens")
+                .containsExactlyInAnyOrder("DataTable/labelled", "Graph/lit", "GraphView/lit", "Chat/followups");
         assertThat(surfaces.stream().map(g -> g.get("surfaceId")).distinct().count()).as("one surface id per golden").isEqualTo(surfaces.size());
     }
 
@@ -307,6 +328,14 @@ class VizCatalogTest {
         out.add(golden("GraphView", "loading", VizCatalog.ID, List.of(graph), Map.of(), List.of("Who feeds whom", "Loading the graph")));
         out.add(golden("GraphView", "error", VizCatalog.ID, List.of(graph), Map.of("nodes", "not a list", "edges", List.of()),
                 List.of("Who feeds whom", "Unavailable", "do not read as a table")));
+        // AF-11, AF-16: the rows on a path marked lit; the view draws them as selected, beside a person's own selection
+        Map<String, Object> path = Surfaces.graphView("path", "/nodes", "/edges", "layered", Map.of("title", "Why the claim is held"));
+        out.add(golden("GraphView", "lit", VizCatalog.ID, List.of(path),
+                Map.of("nodes", List.of(Map.of("id", "claim", "label", "Claim C-1001", "kind", "claim", "lit", true), Map.of("id", "receipt", "label", "Missing receipt", "kind", "finding", "lit", true),
+                                Map.of("id", "policy", "label", "Receipts policy", "kind", "source", "lit", true), Map.of("id", "travel", "label", "Travel budget", "kind", "finding")),
+                        "edges", List.of(Map.of("source", "claim", "target", "receipt", "rel", "held for", "lit", true), Map.of("source", "receipt", "target", "policy", "rel", "required by", "lit", true),
+                                Map.of("source", "claim", "target", "travel", "rel", "charged to"))),
+                List.of("Why the claim is held", "Claim C-1001", "Missing receipt", "Receipts policy", "Travel budget")));
         return out;
     }
 
@@ -393,6 +422,18 @@ class VizCatalogTest {
         out.add(golden("Chat", "error", w, List.of(Surfaces.chat("chat", "workbench", "main", options)),
                 Map.of("conversations", List.of(question), "files", List.of(q3), "progress", List.of(failed)),
                 List.of("Where did we overspend in Q3?", "The agent stopped", "Retry")));
+        // AF-1 to AF-8, AF-16, AF-19: the follow-ups bound to the agent's rows, and the thumbs; a row with no line always
+        // draws, a row of the newest answer draws, a row of an older answer does not, and a label stands for a long text
+        Map<String, Object> followups = Surfaces.chat("chat", "workbench", "main", Map.of("suggestions", Map.of("@path", "/followups"),
+                "controls", List.of("copy", "feedback"), "format", "text/markdown"));
+        out.add(golden("Chat", "followups", w, List.of(followups),
+                Map.of("conversations", List.of(question, answer), "files", List.of(q3), "progress", List.of(),
+                        "followups", List.of(row("text", "Which receipts are missing?", "line", "m-2"),
+                                row("text", "Which travel claims of Q3 ran over their budget, which receipts does each lack, and who approved each of them?",
+                                        "label", "Travel claims over budget", "line", "m-2"),
+                                row("text", "What does the receipts policy say?"),
+                                row("text", "What was the Q2 total?", "line", "m-0"))),
+                List.of("Travel ran", "Which receipts are missing?", "Travel claims over budget", "What does the receipts policy say?")));
         Map<String, Object> holding = row("schemaVersion", 1, "id", "working-workbench-main", "agent", "workbench", "key", "main",
                 "files", List.of("data/q3-expenses.csv"), "task", "reading q3-expenses.csv", "state", "working", "since", "2026-11-10T09:00:31Z");
         Map<String, Object> treeOptions = Map.of("working", "/working", "upload", true, "label", "Files", "actions", List.of("ask", "download", "share", "rename", "remove"));
@@ -448,6 +489,31 @@ class VizCatalogTest {
             }
         });
         return out;
+    }
+
+    /** AF-9 to AF-14: the catalog says what a lit row does in Graph and GraphView, and DataTable takes a row button's label. */
+    @Test
+    void aPathLightsAndARowButtonReadsItsLabel() {
+        JsonNode c = VizCatalog.catalog().path("components");
+        for (String name : List.of("Graph", "GraphView")) {
+            assertThat(c.path(name).path("properties").path("nodes").path("description").asText()).as(name + " nodes").contains("lit: true");
+            assertThat(c.path(name).path("properties").path("edges").path("description").asText()).as(name + " edges").contains("lit: true");
+            assertThat(c.path(name).path("description").asText()).as(name).contains(", on the path");
+        }
+        assertThat(c.path("GraphView").path("description").asText()).contains("selected style", "accent stroke");
+        assertThat(c.path("Graph").path("description").asText()).contains("only when it is lit, hovered, or touches the hovered or focused node");
+        JsonNode label = c.path("DataTable").path("properties").path("rowActionLabel");
+        assertThat(label.path("type").asText()).isEqualTo("string");
+        assertThat(label.path("description").asText()).contains("first column");
+        // the builder: a label beside its action, the four-argument form as before, and no label without an action
+        Map<String, Object> table = Surfaces.dataTable("pages", List.of(Map.of("key", "title")), "/pages", "pages.add", "  Add the page ");
+        assertThat(table).containsEntry("rowAction", "pages.add").containsEntry("rowActionLabel", "Add the page");
+        assertThat(Surfaces.dataTable("pages", List.of(Map.of("key", "title")), "/pages", "pages.add")).doesNotContainKey("rowActionLabel");
+        assertThat(Surfaces.dataTable("pages", List.of(Map.of("key", "title")), "/pages", "pages.add", "")).doesNotContainKey("rowActionLabel");
+        assertThat(Surfaces.dataTable("pages", List.of(Map.of("key", "title")), "/pages", "", null)).doesNotContainKey("rowAction").doesNotContainKey("rowActionLabel");
+        assertThatThrownBy(() -> Surfaces.dataTable("pages", List.of(Map.of("key", "title")), "/pages", "", "Add the page")).hasMessageContaining("rowActionLabel names the button of a rowAction");
+        // lit is row data: Graph and GraphView take no new option (AF-15)
+        assertThatThrownBy(() -> Surfaces.graphView("g", "/n", "/e", "force", Map.of("lit", true))).hasMessageContaining("no property lit");
     }
 
     @Test

@@ -121,6 +121,38 @@ class WidgetsCatalogTest {
         assertThatThrownBy(() -> Surfaces.filePreview("preview", "f-1", Map.of("kinds", List.of("text/html")))).hasMessageContaining("kinds");
     }
 
+    /**
+     * AF-1, AF-2, AF-15, AF-19: a Chat's suggestions are a list of strings or one binding to the agent's rows, never both;
+     * the catalog says so with a oneOf, and the builder checks a binding as every binding is checked.
+     */
+    @Test
+    void aChatsSuggestionsAreAListOrABinding() {
+        JsonNode suggestions = WidgetsCatalog.catalog().path("components").path("Chat").path("properties").path("suggestions");
+        assertThat(suggestions.path("oneOf")).hasSize(2);
+        assertThat(suggestions.path("oneOf").get(0).path("items").path("type").asText()).isEqualTo("string");
+        assertThat(suggestions.path("oneOf").get(1).path("$ref").asText()).isEqualTo("#/$defs/DataBinding");
+        assertThat(suggestions.path("description").asText()).contains("text", "label", "line", "At most 8", "120 characters", "never both");
+        Map<String, Object> bound = Surfaces.chat("chat", "desk", "main", Map.of("suggestions", Map.of("@path", "/followups"), "controls", List.of("copy", "feedback")));
+        assertThat(bound).containsEntry("suggestions", Map.of("@path", "/followups"));
+        assertThat(Surfaces.chat("chat", "desk", "main", Map.of("suggestions", List.of("Hello", "What can you do?")))).containsEntry("suggestions", List.of("Hello", "What can you do?"));
+        assertThatThrownBy(() -> Surfaces.chat("chat", "desk", "main", Map.of("suggestions", Map.of("path", "/followups"))))
+                .as("v0.9.1's binding").hasMessageContaining("binds with A2UI 1.0");
+        assertThatThrownBy(() -> Surfaces.chat("chat", "desk", "main", Map.of("suggestions", Map.of("@path", "followups"))))
+                .as("a binding is a JSON pointer").hasMessageContaining("one binding");
+        assertThatThrownBy(() -> Surfaces.chat("chat", "desk", "main", Map.of("suggestions", Map.of("@path", "/followups", "items", List.of("Hello")))))
+                .as("a list or a binding, never both").hasMessageContaining("one binding");
+        assertThatThrownBy(() -> Surfaces.chat("chat", "desk", "main", Map.of("suggestions", List.of(Map.of("text", "Hello")))))
+                .as("rows are data the agent writes at the bound path, not literals").hasMessageContaining("list of strings");
+        assertThatThrownBy(() -> Surfaces.chat("chat", "desk", "main", Map.of("suggestions", "Hello"))).hasMessageContaining("list of strings");
+    }
+
+    @Test
+    void theFeedbackControlSaysThumbsWithAPressedState() {
+        // AF-6, AF-7: the catalog tells an author what the control draws and when it sends
+        String controls = WidgetsCatalog.catalog().path("components").path("Chat").path("properties").path("controls").path("description").asText();
+        assertThat(controls).contains("Helpful", "Not helpful", "pressed", "chat.feedback");
+    }
+
     @Test
     void noCatalogTextNamesAnInternalPlanOrTicket() {
         // a catalog's descriptions are what an agent author and a model read, so they say what a component does in

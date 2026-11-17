@@ -130,7 +130,7 @@
           "const" : "Chat"
         },
         "controls" : {
-          "description" : "the controls under an answer: copy its text, retry (a new line in reply to the same question), stop (the chat.stop action), feedback (the chat.feedback action, up or down)",
+          "description" : "the controls under an answer: copy its text, retry (a new line in reply to the same question), stop (the chat.stop action), feedback (two icon buttons, thumbs up Helpful and thumbs down Not helpful, each with its pressed state: the chat.feedback action with up or down, sent again only when the person changes the choice, which the chat keeps per line for the page's life)",
           "items" : {
             "enum" : [ "copy", "retry", "stop", "feedback" ]
           },
@@ -183,11 +183,15 @@
           "type" : "string"
         },
         "suggestions" : {
-          "description" : "questions offered as chips; a tap sends the question as a line",
-          "items" : {
-            "type" : "string"
-          },
-          "type" : "array"
+          "description" : "questions offered as chips over the Send box; a tap sends the chip's whole text as the person's line. A list of strings, or a DataBinding to a list the agent writes, never both, so a page's starters are bound rows too. A bound item is a string or a row {text, label, line}: text is the line a tap sends; label, at most 60 characters, the chip's words when they differ (the full text is the chip's title); line, the id of the agent line the chip follows: such a chip draws only while that line is the newest line of the thread, hides when the person sends a new line, and a row with no line always draws. At most 8 chips draw, each cut at 120 characters with its full text as its title and sent whole.",
+          "oneOf" : [ {
+            "items" : {
+              "type" : "string"
+            },
+            "type" : "array"
+          }, {
+            "$ref" : "#/$defs/DataBinding"
+          } ]
         },
         "writeAction" : {
           "default" : "write",
