@@ -21,7 +21,7 @@
     },
     "ComponentMetadata" : {
       "additionalProperties" : false,
-      "description" : "Optional component-level metadata for vendor extensions (A2UI 1.0's ComponentCommon).",
+      "description" : "Optional component-level metadata for vendor extensions, written as the component's @metadata key (A2UI 1.0's ComponentCommon).",
       "properties" : {
         "extensions" : {
           "$ref" : "https://a2ui.org/specification/v1_0/common_types.json#/$defs/Extensions"
@@ -83,11 +83,14 @@
       "element" : "agentspaces-approval-card",
       "entry" : "",
       "properties" : {
-        "accessibility" : {
+        "@accessibility" : {
           "$ref" : "#/$defs/AccessibilityAttributes"
         },
-        "catalogId" : {
+        "@catalogId" : {
           "$ref" : "#/$defs/CatalogId"
+        },
+        "@metadata" : {
+          "$ref" : "#/$defs/ComponentMetadata"
         },
         "component" : {
           "const" : "ApprovalCard"
@@ -95,9 +98,6 @@
         "id" : {
           "$ref" : "#/$defs/ComponentId",
           "description" : "the component's id, unique on its surface"
-        },
-        "metadata" : {
-          "$ref" : "#/$defs/ComponentMetadata"
         }
       },
       "reads" : "/approvals",
@@ -111,8 +111,14 @@
       "element" : "agentspaces-chat",
       "entry" : "https://badmonkey.ai/agentspaces/a2ui/v1/ChatMessage",
       "properties" : {
-        "accessibility" : {
+        "@accessibility" : {
           "$ref" : "#/$defs/AccessibilityAttributes"
+        },
+        "@catalogId" : {
+          "$ref" : "#/$defs/CatalogId"
+        },
+        "@metadata" : {
+          "$ref" : "#/$defs/ComponentMetadata"
         },
         "agent" : {
           "description" : "the agent that answers, named over the thread",
@@ -122,9 +128,6 @@
           "default" : false,
           "description" : "a person attaches files: dropped on the chat, picked, or sent from a FileTree's Ask about",
           "type" : "boolean"
-        },
-        "catalogId" : {
-          "$ref" : "#/$defs/CatalogId"
         },
         "component" : {
           "const" : "Chat"
@@ -160,9 +163,6 @@
           "maximum" : 1000,
           "minimum" : 1,
           "type" : "integer"
-        },
-        "metadata" : {
-          "$ref" : "#/$defs/ComponentMetadata"
         },
         "placeholder" : {
           "description" : "the hint in the empty message box",
@@ -210,15 +210,18 @@
       "element" : "agentspaces-chat-input",
       "entry" : "https://badmonkey.ai/agentspaces/a2ui/v1/ChatMessage",
       "properties" : {
-        "accessibility" : {
+        "@accessibility" : {
           "$ref" : "#/$defs/AccessibilityAttributes"
+        },
+        "@catalogId" : {
+          "$ref" : "#/$defs/CatalogId"
+        },
+        "@metadata" : {
+          "$ref" : "#/$defs/ComponentMetadata"
         },
         "agent" : {
           "description" : "the agent that answers, named over the thread",
           "type" : "string"
-        },
-        "catalogId" : {
-          "$ref" : "#/$defs/CatalogId"
         },
         "component" : {
           "const" : "ChatInput"
@@ -230,9 +233,6 @@
         "key" : {
           "description" : "the conversation key shown; empty for every key",
           "type" : "string"
-        },
-        "metadata" : {
-          "$ref" : "#/$defs/ComponentMetadata"
         },
         "placeholder" : {
           "description" : "the hint in the empty message box",
@@ -257,11 +257,14 @@
       "element" : "agentspaces-file-preview",
       "entry" : "https://badmonkey.ai/agentspaces/a2ui/v1/SharedFile",
       "properties" : {
-        "accessibility" : {
+        "@accessibility" : {
           "$ref" : "#/$defs/AccessibilityAttributes"
         },
-        "catalogId" : {
+        "@catalogId" : {
           "$ref" : "#/$defs/CatalogId"
+        },
+        "@metadata" : {
+          "$ref" : "#/$defs/ComponentMetadata"
         },
         "component" : {
           "const" : "FilePreview"
@@ -299,9 +302,6 @@
           "maximum" : 16777216,
           "minimum" : 1,
           "type" : "integer"
-        },
-        "metadata" : {
-          "$ref" : "#/$defs/ComponentMetadata"
         }
       },
       "reads" : "/files",
@@ -315,19 +315,22 @@
       "element" : "agentspaces-file-share",
       "entry" : "https://badmonkey.ai/agentspaces/a2ui/v1/SharedFile",
       "properties" : {
+        "@accessibility" : {
+          "$ref" : "#/$defs/AccessibilityAttributes"
+        },
+        "@catalogId" : {
+          "$ref" : "#/$defs/CatalogId"
+        },
+        "@metadata" : {
+          "$ref" : "#/$defs/ComponentMetadata"
+        },
         "accept" : {
           "$ref" : "#/$defs/Accept",
           "description" : "the media types and extensions a drop takes, such as .json or text/*; empty takes every file"
         },
-        "accessibility" : {
-          "$ref" : "#/$defs/AccessibilityAttributes"
-        },
         "attest" : {
           "description" : "a statement the person ticks before a drop; its words travel with each upload as the lawful basis",
           "type" : "string"
-        },
-        "catalogId" : {
-          "$ref" : "#/$defs/CatalogId"
         },
         "component" : {
           "const" : "FileShare"
@@ -343,9 +346,6 @@
         "maxBytes" : {
           "description" : "the largest file, shown as a hint and checked on the page; the feed's own cap decides",
           "type" : "integer"
-        },
-        "metadata" : {
-          "$ref" : "#/$defs/ComponentMetadata"
         },
         "multiple" : {
           "description" : "several files in one drop (true)",
@@ -367,12 +367,18 @@
       "element" : "agentspaces-file-tree",
       "entry" : "https://badmonkey.ai/agentspaces/a2ui/v1/SharedFile",
       "properties" : {
+        "@accessibility" : {
+          "$ref" : "#/$defs/AccessibilityAttributes"
+        },
+        "@catalogId" : {
+          "$ref" : "#/$defs/CatalogId"
+        },
+        "@metadata" : {
+          "$ref" : "#/$defs/ComponentMetadata"
+        },
         "accept" : {
           "$ref" : "#/$defs/Accept",
           "description" : "the media types and extensions an upload takes; empty takes every file"
-        },
-        "accessibility" : {
-          "$ref" : "#/$defs/AccessibilityAttributes"
         },
         "actions" : {
           "description" : "the items of a file's context menu",
@@ -394,9 +400,6 @@
             "enum" : [ "working", "new", "changed", "agent" ]
           },
           "type" : "array"
-        },
-        "catalogId" : {
-          "$ref" : "#/$defs/CatalogId"
         },
         "chat" : {
           "$ref" : "#/$defs/ComponentId",
@@ -422,9 +425,6 @@
         "maxBytes" : {
           "description" : "the largest upload, checked on the page; the feed's own cap decides",
           "type" : "integer"
-        },
-        "metadata" : {
-          "$ref" : "#/$defs/ComponentMetadata"
         },
         "preview" : {
           "$ref" : "#/$defs/ComponentId",
@@ -456,11 +456,14 @@
       "element" : "agentspaces-timeline-strip",
       "entry" : "",
       "properties" : {
-        "accessibility" : {
+        "@accessibility" : {
           "$ref" : "#/$defs/AccessibilityAttributes"
         },
-        "catalogId" : {
+        "@catalogId" : {
           "$ref" : "#/$defs/CatalogId"
+        },
+        "@metadata" : {
+          "$ref" : "#/$defs/ComponentMetadata"
         },
         "component" : {
           "const" : "TimelineStrip"
@@ -472,9 +475,6 @@
         "id" : {
           "$ref" : "#/$defs/ComponentId",
           "description" : "the component's id, unique on its surface"
-        },
-        "metadata" : {
-          "$ref" : "#/$defs/ComponentMetadata"
         }
       },
       "reads" : "/events",

@@ -730,6 +730,246 @@
     "envelopes" : [ {
       "createSurface" : {
         "catalogId" : "agentspaces-viz",
+        "surfaceId" : "datatable-select"
+      },
+      "version" : "1.0"
+    }, {
+      "updateComponents" : {
+        "components" : [ {
+          "children" : [ "calls" ],
+          "component" : "Column",
+          "id" : "root"
+        }, {
+          "columns" : [ {
+            "key" : "ship",
+            "title" : "Ship"
+          }, {
+            "format" : "number",
+            "key" : "calls",
+            "title" : "Calls"
+          } ],
+          "component" : "DataTable",
+          "id" : "calls",
+          "rows" : "/calls",
+          "select" : {
+            "clearOn" : "port",
+            "focus" : "route",
+            "key" : "ship",
+            "label" : "Show on the map",
+            "map" : "harbour",
+            "max" : 8
+          },
+          "sort" : "-calls"
+        } ],
+        "surfaceId" : "datatable-select"
+      },
+      "version" : "1.0"
+    }, {
+      "updateDataModel" : {
+        "path" : "/",
+        "surfaceId" : "datatable-select",
+        "value" : {
+          "_geo" : {
+            "harbour" : {
+              "picked" : [ "MV Northgate" ]
+            }
+          },
+          "calls" : [ {
+            "calls" : 4,
+            "port" : "Liverpool",
+            "route" : "route-northgate",
+            "ship" : "MV Northgate"
+          }, {
+            "calls" : 2,
+            "port" : "Liverpool",
+            "route" : "route-brendan",
+            "ship" : "Saint Brendan"
+          } ]
+        }
+      },
+      "version" : "1.0"
+    } ],
+    "expectText" : [ "Show on the map", "Ship", "Calls", "MV Northgate", "Saint Brendan", "Clear (1)" ],
+    "name" : "DataTable",
+    "state" : "select",
+    "surfaceId" : "datatable-select"
+  }, {
+    "catalogId" : "agentspaces-viz",
+    "envelopes" : [ {
+      "createSurface" : {
+        "catalogId" : "agentspaces-viz",
+        "surfaceId" : "datatable-actions"
+      },
+      "version" : "1.0"
+    }, {
+      "updateComponents" : {
+        "components" : [ {
+          "children" : [ "runs" ],
+          "component" : "Column",
+          "id" : "root"
+        }, {
+          "columns" : [ {
+            "key" : "name",
+            "title" : "Run"
+          } ],
+          "component" : "DataTable",
+          "id" : "runs",
+          "rowActions" : [ {
+            "action" : "run.replay",
+            "label" : "Replay"
+          }, {
+            "action" : "run.show",
+            "label" : "Show"
+          } ],
+          "rows" : "/runs"
+        } ],
+        "surfaceId" : "datatable-actions"
+      },
+      "version" : "1.0"
+    }, {
+      "updateDataModel" : {
+        "path" : "/",
+        "surfaceId" : "datatable-actions",
+        "value" : {
+          "runs" : [ {
+            "name" : "Morning run"
+          } ]
+        }
+      },
+      "version" : "1.0"
+    } ],
+    "expectText" : [ "Run", "Morning run", "Replay", "Show" ],
+    "name" : "DataTable",
+    "state" : "actions",
+    "surfaceId" : "datatable-actions"
+  }, {
+    "catalogId" : "agentspaces-viz",
+    "envelopes" : [ {
+      "createSurface" : {
+        "catalogId" : "agentspaces-viz",
+        "surfaceId" : "datatable-empty"
+      },
+      "version" : "1.0"
+    }, {
+      "updateComponents" : {
+        "components" : [ {
+          "children" : [ "finished" ],
+          "component" : "Column",
+          "id" : "root"
+        }, {
+          "columns" : [ {
+            "key" : "name",
+            "title" : "Finished run"
+          } ],
+          "component" : "DataTable",
+          "emptyText" : "No run has finished yet.",
+          "id" : "finished",
+          "rows" : "/finished"
+        } ],
+        "surfaceId" : "datatable-empty"
+      },
+      "version" : "1.0"
+    }, {
+      "updateDataModel" : {
+        "path" : "/",
+        "surfaceId" : "datatable-empty",
+        "value" : {
+          "finished" : [ ]
+        }
+      },
+      "version" : "1.0"
+    } ],
+    "expectText" : [ "Finished run", "No run has finished yet." ],
+    "name" : "DataTable",
+    "state" : "empty",
+    "surfaceId" : "datatable-empty"
+  }, {
+    "catalogId" : "agentspaces-viz",
+    "envelopes" : [ {
+      "createSurface" : {
+        "catalogId" : "agentspaces-viz",
+        "surfaceId" : "toolbar-confirm"
+      },
+      "version" : "1.0"
+    }, {
+      "updateComponents" : {
+        "components" : [ {
+          "children" : [ "bar" ],
+          "component" : "Column",
+          "id" : "root"
+        }, {
+          "actions" : [ {
+            "action" : "list.clear",
+            "confirm" : {
+              "no" : "Cancel",
+              "text" : "Clear every row of the list?",
+              "title" : "Clear the list",
+              "yes" : "Clear"
+            },
+            "label" : "Clear the list"
+          } ],
+          "component" : "Toolbar",
+          "id" : "bar",
+          "title" : "Desk"
+        } ],
+        "surfaceId" : "toolbar-confirm"
+      },
+      "version" : "1.0"
+    } ],
+    "expectText" : [ "Desk", "Clear the list" ],
+    "name" : "Toolbar",
+    "state" : "confirm",
+    "surfaceId" : "toolbar-confirm"
+  }, {
+    "catalogId" : "agentspaces-viz",
+    "envelopes" : [ {
+      "createSurface" : {
+        "catalogId" : "agentspaces-viz",
+        "surfaceId" : "toolbar-confirm-bound"
+      },
+      "version" : "1.0"
+    }, {
+      "updateComponents" : {
+        "components" : [ {
+          "children" : [ "bar" ],
+          "component" : "Column",
+          "id" : "root"
+        }, {
+          "actions" : [ {
+            "action" : "list.clear",
+            "confirm" : {
+              "text" : "/prompt",
+              "title" : "Clear the list",
+              "yes" : "Clear"
+            },
+            "label" : "Clear the list"
+          } ],
+          "component" : "Toolbar",
+          "id" : "bar",
+          "title" : "Desk"
+        } ],
+        "surfaceId" : "toolbar-confirm-bound"
+      },
+      "version" : "1.0"
+    }, {
+      "updateDataModel" : {
+        "path" : "/",
+        "surfaceId" : "toolbar-confirm-bound",
+        "value" : {
+          "prompt" : "Clear all 3 rows?"
+        }
+      },
+      "version" : "1.0"
+    } ],
+    "expectText" : [ "Desk", "Clear the list" ],
+    "name" : "Toolbar",
+    "state" : "confirm-bound",
+    "surfaceId" : "toolbar-confirm-bound"
+  }, {
+    "catalogId" : "agentspaces-viz",
+    "envelopes" : [ {
+      "createSurface" : {
+        "catalogId" : "agentspaces-viz",
         "surfaceId" : "graph-lit"
       },
       "version" : "1.0"

@@ -34,6 +34,34 @@ class BuilderBindingsTest {
     static final Map<String, Object> OLD_PATH = Map.of("path", "/x");
     static final Map<String, Object> OLD_CALL = Map.of("call", "formatDate", "args", Map.of());
 
+    /**
+     * A2UI 1.0 final (2026-11-10, spec §2.9): a component's envelope keys are {@code @catalogId}, {@code @accessibility},
+     * {@code @metadata} and {@code @checks}; their bare names are refused unless the component declares them, and below
+     * a component's root a single-{@code @} key other than {@code @path} or {@code @call} is reserved ({@code @@} escapes).
+     */
+    @Test
+    void theEnvelopeKeysTakeTheAtPrefixAndOtherSingleAtKeysAreRefused() {
+        Map<String, Object> chart = new java.util.LinkedHashMap<>(Surfaces.visualize("v", "/spend", "column", "month", "amount", Map.of()));
+        Map<String, Object> labelled = new java.util.LinkedHashMap<>(chart);
+        labelled.put("@accessibility", Map.of("label", "Spend by month"));
+        labelled.put("@catalogId", VizCatalog.ID);
+        assertThatCode(() -> Surfaces.bindings(VizCatalog.CATALOG, labelled)).doesNotThrowAnyException();
+        for (String bare : List.of("catalogId", "accessibility", "metadata", "checks")) {
+            Map<String, Object> old = new java.util.LinkedHashMap<>(chart);
+            old.put(bare, Map.of());
+            assertThatThrownBy(() -> Surfaces.bindings(VizCatalog.CATALOG, old)).hasMessageContaining("Visualize." + bare).hasMessageContaining("@" + bare);
+        }
+        Map<String, Object> unknown = new java.util.LinkedHashMap<>(chart);
+        unknown.put("@theme", "dark");
+        assertThatThrownBy(() -> Surfaces.bindings(VizCatalog.CATALOG, unknown)).hasMessageContaining("Visualize.@theme").hasMessageContaining("reserved");
+        assertThatThrownBy(() -> Surfaces.visualize("v", "/spend", "column", "month", "amount", Map.of("accessibility", Map.of("label", "x"))))
+                .hasMessageContaining("@accessibility");
+        // nested: a literal key that starts with @ is doubled; @path and @call are the protocol's own
+        assertThatThrownBy(() -> Surfaces.button("b", "Go", "go", Map.of("row", Map.of("@type", "Claim")), null))
+                .hasMessageContaining("context.row.@type").hasMessageContaining("@@type");
+        assertThatCode(() -> Surfaces.button("b", "Go", "go", Map.of("row", Map.of("@@type", "Claim"), "at", Map.of("@path", "/x")), null)).doesNotThrowAnyException();
+    }
+
     @Test
     void theBasicBuildersRefuseAnOldFormInAnActionContext() {
         assertThatThrownBy(() -> Surfaces.button("b", "Go", "go", Map.of("row", OLD_PATH), null)).hasMessageContaining("context.row").hasMessageContaining("@path");

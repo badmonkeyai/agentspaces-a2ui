@@ -85,13 +85,13 @@
           "$ref": "#/$defs/ComponentId",
           "description": "the component's id, unique on its surface"
         },
-        "catalogId": {
+        "@catalogId": {
           "$ref": "#/$defs/CatalogId"
         },
-        "accessibility": {
+        "@accessibility": {
           "$ref": "#/$defs/AccessibilityAttributes"
         },
-        "metadata": {
+        "@metadata": {
           "$ref": "#/$defs/ComponentMetadata"
         }
       },
@@ -176,13 +176,13 @@
           "$ref": "#/$defs/ComponentId",
           "description": "the component's id, unique on its surface"
         },
-        "catalogId": {
+        "@catalogId": {
           "$ref": "#/$defs/CatalogId"
         },
-        "accessibility": {
+        "@accessibility": {
           "$ref": "#/$defs/AccessibilityAttributes"
         },
-        "metadata": {
+        "@metadata": {
           "$ref": "#/$defs/ComponentMetadata"
         }
       },
@@ -194,7 +194,7 @@
       "additionalProperties": false
     },
     "DataTable": {
-      "description": "A virtualised table over rows bound to the data model, with sort, filter, paging, and a row action.",
+      "description": "A virtualised table over rows bound to the data model, with sort (each column's header a button), filter, paging, a row action or several, an empty text, and, with select, a checkbox per row that picks the row's key into a map's pick set.",
       "type": "object",
       "properties": {
         "component": {
@@ -245,17 +245,84 @@
           "type": "string",
           "description": "the words on each row's button; the action's name when absent. The button's accessible name adds the row's first column, so a screen reader tells the rows' buttons apart"
         },
+        "rowActions": {
+          "type": "array",
+          "description": "several row buttons, each dispatching its action with {row}, beside rowAction (which stays); each button's accessible name adds the row's first column",
+          "items": {
+            "type": "object",
+            "properties": {
+              "action": {
+                "type": "string",
+                "minLength": 1,
+                "description": "the action the button dispatches with {row}"
+              },
+              "label": {
+                "type": "string",
+                "minLength": 1,
+                "description": "the button's words"
+              }
+            },
+            "required": [
+              "action",
+              "label"
+            ],
+            "additionalProperties": false
+          }
+        },
+        "select": {
+          "type": "object",
+          "description": "a leading checkbox per row that adds the row's key to a map's pick set (the agentspaces-geo state rule, picked: in the browser's memory only) or takes it out; picks are kept by key, so they survive sort, filter, paging and scrolling; a picked row shows its pick hue; the toolbar offers Clear (n); past max the table says so in words; a key that leaves the rows leaves the set, and a change of the clearOn column's value empties it, each said in the table's polite live region; Shift with a click picks the range from the last pick, up to max",
+          "properties": {
+            "key": {
+              "type": "string",
+              "minLength": 1,
+              "description": "the column whose value is the row's pick key"
+            },
+            "map": {
+              "type": "string",
+              "description": "the id of the GeoMap whose pick set the table writes; in a GeoLayout, the layout's map"
+            },
+            "max": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 8,
+              "default": 8,
+              "description": "the most keys picked at once"
+            },
+            "label": {
+              "type": "string",
+              "description": "the checkbox column's heading",
+              "default": "Show on the map"
+            },
+            "clearOn": {
+              "type": "string",
+              "description": "a column whose value names what the rows are of (a scope): when it changes, the pick set empties"
+            },
+            "focus": {
+              "type": "string",
+              "description": "a column holding a map feature's id: the first column's text becomes a button that flies the map to that feature and opens its card"
+            }
+          },
+          "required": [
+            "key"
+          ],
+          "additionalProperties": false
+        },
+        "emptyText": {
+          "type": "string",
+          "description": "what the table says while it has no row, in place of \"No row yet.\""
+        },
         "id": {
           "$ref": "#/$defs/ComponentId",
           "description": "the component's id, unique on its surface"
         },
-        "catalogId": {
+        "@catalogId": {
           "$ref": "#/$defs/CatalogId"
         },
-        "accessibility": {
+        "@accessibility": {
           "$ref": "#/$defs/AccessibilityAttributes"
         },
-        "metadata": {
+        "@metadata": {
           "$ref": "#/$defs/ComponentMetadata"
         }
       },
@@ -396,13 +463,13 @@
           "$ref": "#/$defs/ComponentId",
           "description": "the component's id, unique on its surface"
         },
-        "catalogId": {
+        "@catalogId": {
           "$ref": "#/$defs/CatalogId"
         },
-        "accessibility": {
+        "@accessibility": {
           "$ref": "#/$defs/AccessibilityAttributes"
         },
-        "metadata": {
+        "@metadata": {
           "$ref": "#/$defs/ComponentMetadata"
         }
       },
@@ -456,13 +523,13 @@
           "$ref": "#/$defs/ComponentId",
           "description": "the component's id, unique on its surface"
         },
-        "catalogId": {
+        "@catalogId": {
           "$ref": "#/$defs/CatalogId"
         },
-        "accessibility": {
+        "@accessibility": {
           "$ref": "#/$defs/AccessibilityAttributes"
         },
-        "metadata": {
+        "@metadata": {
           "$ref": "#/$defs/ComponentMetadata"
         }
       },
@@ -515,13 +582,13 @@
           "$ref": "#/$defs/ComponentId",
           "description": "the component's id, unique on its surface"
         },
-        "catalogId": {
+        "@catalogId": {
           "$ref": "#/$defs/CatalogId"
         },
-        "accessibility": {
+        "@accessibility": {
           "$ref": "#/$defs/AccessibilityAttributes"
         },
-        "metadata": {
+        "@metadata": {
           "$ref": "#/$defs/ComponentMetadata"
         }
       },
@@ -553,13 +620,13 @@
           "$ref": "#/$defs/ComponentId",
           "description": "the component's id, unique on its surface"
         },
-        "catalogId": {
+        "@catalogId": {
           "$ref": "#/$defs/CatalogId"
         },
-        "accessibility": {
+        "@accessibility": {
           "$ref": "#/$defs/AccessibilityAttributes"
         },
-        "metadata": {
+        "@metadata": {
           "$ref": "#/$defs/ComponentMetadata"
         }
       },
@@ -625,13 +692,13 @@
           "$ref": "#/$defs/ComponentId",
           "description": "the component's id, unique on its surface"
         },
-        "catalogId": {
+        "@catalogId": {
           "$ref": "#/$defs/CatalogId"
         },
-        "accessibility": {
+        "@accessibility": {
           "$ref": "#/$defs/AccessibilityAttributes"
         },
-        "metadata": {
+        "@metadata": {
           "$ref": "#/$defs/ComponentMetadata"
         }
       },
@@ -679,13 +746,13 @@
           "$ref": "#/$defs/ComponentId",
           "description": "the component's id, unique on its surface"
         },
-        "catalogId": {
+        "@catalogId": {
           "$ref": "#/$defs/CatalogId"
         },
-        "accessibility": {
+        "@accessibility": {
           "$ref": "#/$defs/AccessibilityAttributes"
         },
-        "metadata": {
+        "@metadata": {
           "$ref": "#/$defs/ComponentMetadata"
         }
       },
@@ -720,13 +787,13 @@
           "$ref": "#/$defs/ComponentId",
           "description": "the component's id, unique on its surface"
         },
-        "catalogId": {
+        "@catalogId": {
           "$ref": "#/$defs/CatalogId"
         },
-        "accessibility": {
+        "@accessibility": {
           "$ref": "#/$defs/AccessibilityAttributes"
         },
-        "metadata": {
+        "@metadata": {
           "$ref": "#/$defs/ComponentMetadata"
         }
       },
@@ -763,13 +830,13 @@
           "$ref": "#/$defs/ComponentId",
           "description": "the component's id, unique on its surface"
         },
-        "catalogId": {
+        "@catalogId": {
           "$ref": "#/$defs/CatalogId"
         },
-        "accessibility": {
+        "@accessibility": {
           "$ref": "#/$defs/AccessibilityAttributes"
         },
-        "metadata": {
+        "@metadata": {
           "$ref": "#/$defs/ComponentMetadata"
         }
       },
@@ -830,13 +897,13 @@
           "$ref": "#/$defs/ComponentId",
           "description": "the component's id, unique on its surface"
         },
-        "catalogId": {
+        "@catalogId": {
           "$ref": "#/$defs/CatalogId"
         },
-        "accessibility": {
+        "@accessibility": {
           "$ref": "#/$defs/AccessibilityAttributes"
         },
-        "metadata": {
+        "@metadata": {
           "$ref": "#/$defs/ComponentMetadata"
         }
       },
@@ -879,13 +946,13 @@
           "$ref": "#/$defs/ComponentId",
           "description": "the component's id, unique on its surface"
         },
-        "catalogId": {
+        "@catalogId": {
           "$ref": "#/$defs/CatalogId"
         },
-        "accessibility": {
+        "@accessibility": {
           "$ref": "#/$defs/AccessibilityAttributes"
         },
-        "metadata": {
+        "@metadata": {
           "$ref": "#/$defs/ComponentMetadata"
         }
       },
@@ -931,13 +998,13 @@
           "$ref": "#/$defs/ComponentId",
           "description": "the component's id, unique on its surface"
         },
-        "catalogId": {
+        "@catalogId": {
           "$ref": "#/$defs/CatalogId"
         },
-        "accessibility": {
+        "@accessibility": {
           "$ref": "#/$defs/AccessibilityAttributes"
         },
-        "metadata": {
+        "@metadata": {
           "$ref": "#/$defs/ComponentMetadata"
         }
       },
@@ -948,7 +1015,7 @@
       "additionalProperties": false
     },
     "Toolbar": {
-      "description": "A row of actions: each a label and the action it dispatches, with an optional context.",
+      "description": "A row of actions: each a label and the action it dispatches, with an optional context, and an optional confirm step that asks first in a modal dialog.",
       "type": "object",
       "properties": {
         "component": {
@@ -970,6 +1037,35 @@
               },
               "context": {
                 "type": "object"
+              },
+              "confirm": {
+                "type": "object",
+                "description": "asks before the action is dispatched: a modal dialog with the title, the text, the yes button and the no button, the no button focused; Escape and no dispatch nothing, yes dispatches the action",
+                "properties": {
+                  "title": {
+                    "type": "string",
+                    "minLength": 1,
+                    "description": "the dialog's title"
+                  },
+                  "text": {
+                    "type": "string",
+                    "description": "the question: literal text, or a data model path (starting with /) to it, as Notice's text takes"
+                  },
+                  "yes": {
+                    "type": "string",
+                    "default": "Yes",
+                    "description": "the words of the button that dispatches the action"
+                  },
+                  "no": {
+                    "type": "string",
+                    "default": "Cancel",
+                    "description": "the words of the button that dispatches nothing"
+                  }
+                },
+                "required": [
+                  "title"
+                ],
+                "additionalProperties": false
               }
             },
             "required": [
@@ -989,13 +1085,13 @@
           "$ref": "#/$defs/ComponentId",
           "description": "the component's id, unique on its surface"
         },
-        "catalogId": {
+        "@catalogId": {
           "$ref": "#/$defs/CatalogId"
         },
-        "accessibility": {
+        "@accessibility": {
           "$ref": "#/$defs/AccessibilityAttributes"
         },
-        "metadata": {
+        "@metadata": {
           "$ref": "#/$defs/ComponentMetadata"
         }
       },
@@ -1041,13 +1137,13 @@
           "$ref": "#/$defs/ComponentId",
           "description": "the component's id, unique on its surface"
         },
-        "catalogId": {
+        "@catalogId": {
           "$ref": "#/$defs/CatalogId"
         },
-        "accessibility": {
+        "@accessibility": {
           "$ref": "#/$defs/AccessibilityAttributes"
         },
-        "metadata": {
+        "@metadata": {
           "$ref": "#/$defs/ComponentMetadata"
         }
       },
@@ -1070,13 +1166,13 @@
           "$ref": "#/$defs/ComponentId",
           "description": "the component's id, unique on its surface"
         },
-        "catalogId": {
+        "@catalogId": {
           "$ref": "#/$defs/CatalogId"
         },
-        "accessibility": {
+        "@accessibility": {
           "$ref": "#/$defs/AccessibilityAttributes"
         },
-        "metadata": {
+        "@metadata": {
           "$ref": "#/$defs/ComponentMetadata"
         }
       },
@@ -1153,13 +1249,13 @@
           "$ref": "#/$defs/ComponentId",
           "description": "the component's id, unique on its surface"
         },
-        "catalogId": {
+        "@catalogId": {
           "$ref": "#/$defs/CatalogId"
         },
-        "accessibility": {
+        "@accessibility": {
           "$ref": "#/$defs/AccessibilityAttributes"
         },
-        "metadata": {
+        "@metadata": {
           "$ref": "#/$defs/ComponentMetadata"
         }
       },
@@ -1249,13 +1345,13 @@
           "$ref": "#/$defs/ComponentId",
           "description": "the component's id, unique on its surface"
         },
-        "catalogId": {
+        "@catalogId": {
           "$ref": "#/$defs/CatalogId"
         },
-        "accessibility": {
+        "@accessibility": {
           "$ref": "#/$defs/AccessibilityAttributes"
         },
-        "metadata": {
+        "@metadata": {
           "$ref": "#/$defs/ComponentMetadata"
         }
       },
@@ -1330,13 +1426,13 @@
           "$ref": "#/$defs/ComponentId",
           "description": "the component's id, unique on its surface"
         },
-        "catalogId": {
+        "@catalogId": {
           "$ref": "#/$defs/CatalogId"
         },
-        "accessibility": {
+        "@accessibility": {
           "$ref": "#/$defs/AccessibilityAttributes"
         },
-        "metadata": {
+        "@metadata": {
           "$ref": "#/$defs/ComponentMetadata"
         }
       },
@@ -1433,7 +1529,7 @@
     },
     "ComponentMetadata": {
       "type": "object",
-      "description": "Optional component-level metadata for vendor extensions (A2UI 1.0's ComponentCommon).",
+      "description": "Optional component-level metadata for vendor extensions, written as the component's @metadata key (A2UI 1.0's ComponentCommon).",
       "properties": {
         "extensions": {
           "$ref": "https://a2ui.org/specification/v1_0/common_types.json#/$defs/Extensions"

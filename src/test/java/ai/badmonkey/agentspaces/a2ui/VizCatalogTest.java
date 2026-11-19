@@ -73,8 +73,8 @@ class VizCatalogTest {
 
     /**
      * GEO-V-04: both catalogs of this jar are closed A2UI 1.0 documents in the basic catalog's shape: every component
-     * schema says {@code additionalProperties: false} and declares the 1.0 envelope's own properties (id, catalogId,
-     * accessibility, metadata), and {@code $defs} carries anyComponent (each component by reference), anyFunction, and
+     * schema says {@code additionalProperties: false} and declares the 1.0 envelope's own properties (id, and since 1.0 final the
+     * {@code @}-prefixed @catalogId, @accessibility and @metadata, never their bare names), and {@code $defs} carries anyComponent (each component by reference), anyFunction, and
      * the shared types every local {@code $ref} reaches.
      */
     @Test
@@ -89,8 +89,11 @@ class VizCatalogTest {
             for (String name : Catalogs.componentNames(catalog)) {
                 JsonNode c = catalog.path("components").path(name);
                 assertThat(c.path("additionalProperties").isBoolean() && !c.path("additionalProperties").asBoolean()).as(id + "/" + name + " is closed").isTrue();
-                assertThat(c.path("properties").has("id") && c.path("properties").has("catalogId") && c.path("properties").has("accessibility")
-                        && c.path("properties").has("metadata")).as(id + "/" + name + " declares the 1.0 envelope's properties").isTrue();
+                assertThat(c.path("properties").has("id") && c.path("properties").has("@catalogId") && c.path("properties").has("@accessibility")
+                        && c.path("properties").has("@metadata")).as(id + "/" + name + " declares the 1.0 envelope's properties").isTrue();
+                for (String bare : List.of("catalogId", "accessibility", "metadata", "checks")) {
+                    assertThat(c.path("properties").has(bare)).as(id + "/" + name + ": 1.0 final writes the envelope key as @" + bare).isFalse();
+                }
                 assertThat(c.has("oneOf") || c.has("anyOf")).as("a 1.0 component definition has no top-level oneOf or anyOf").isFalse();
             }
             everyLocalRefResolves(catalog, catalog, id);
@@ -246,6 +249,27 @@ class VizCatalogTest {
                         "/pages", "pages.add", "Add the page")),
                 Map.of("pages", List.of(Map.of("title", "Claims handbook", "site", "docs.example.com"), Map.of("title", "Receipts policy", "site", "docs.example.com"))),
                 List.of("Page", "Site", "Claims handbook", "Receipts policy", "Add the page")));
+        // GEO-D-06, GEO-D-07: a table whose rows pick into a map's pick set (one picked), with a focus
+        // column; a table with two row buttons; a table's own empty words; a toolbar action that asks first, in words and
+        // from a path
+        Map<String, Object> callsSelect = Surfaces.dataTable("calls", List.of(Map.of("key", "ship", "title", "Ship"), Map.of("key", "calls", "title", "Calls", "format", "number")), "/calls",
+                Map.of("sort", "-calls", "select", Surfaces.tableSelect("ship", "harbour", 8, "Show on the map", "port", "route")));
+        surfaces.add(golden("DataTable", "select", VizCatalog.ID, List.of(callsSelect),
+                Map.of("calls", List.of(Map.of("ship", "MV Northgate", "calls", 4, "port", "Liverpool", "route", "route-northgate"), Map.of("ship", "Saint Brendan", "calls", 2, "port", "Liverpool", "route", "route-brendan")),
+                        "_geo", Map.of("harbour", Map.of("picked", List.of("MV Northgate")))),
+                List.of("Show on the map", "Ship", "Calls", "MV Northgate", "Saint Brendan", "Clear (1)")));
+        surfaces.add(golden("DataTable", "actions", VizCatalog.ID, List.of(Surfaces.dataTable("runs", List.of(Map.of("key", "name", "title", "Run")), "/runs",
+                        Map.of("rowActions", List.of(Surfaces.tableAction("run.replay", "Replay"), Surfaces.tableAction("run.show", "Show"))))),
+                Map.of("runs", List.of(Map.of("name", "Morning run"))), List.of("Run", "Morning run", "Replay", "Show")));
+        surfaces.add(golden("DataTable", "empty", VizCatalog.ID, List.of(Surfaces.dataTable("finished", List.of(Map.of("key", "name", "title", "Finished run")), "/finished",
+                        Map.of("emptyText", "No run has finished yet."))),
+                Map.of("finished", List.of()), List.of("Finished run", "No run has finished yet.")));
+        surfaces.add(golden("Toolbar", "confirm", VizCatalog.ID, List.of(Surfaces.toolbar("bar", "Desk", List.of(Surfaces.toolbarAction("Clear the list", "list.clear",
+                        Surfaces.confirm("Clear the list", "Clear every row of the list?", "Clear", "Cancel"))))),
+                Map.of(), List.of("Desk", "Clear the list")));
+        surfaces.add(golden("Toolbar", "confirm-bound", VizCatalog.ID, List.of(Surfaces.toolbar("bar", "Desk", List.of(Surfaces.toolbarAction("Clear the list", "list.clear",
+                        Surfaces.confirm("Clear the list", "/prompt", "Clear", ""))))),
+                Map.of("prompt", "Clear all 3 rows?"), List.of("Desk", "Clear the list")));
         surfaces.add(golden("Graph", "lit", VizCatalog.ID, List.of(Surfaces.graph("route", "/nodes", "/edges", "columns", "")),
                 Map.of("nodes", List.of(Map.of("id", "claim", "title", "Claim C-1001", "column", "asked", "lit", true), Map.of("id", "receipt", "title", "Missing receipt", "column", "found", "lit", true),
                                 Map.of("id", "policy", "title", "Receipts policy", "column", "source", "lit", true), Map.of("id", "travel", "title", "Travel budget", "column", "found")),
@@ -299,6 +323,9 @@ class VizCatalogTest {
         assertThat(surfaces.stream().filter(g -> "followups".equals(g.get("state")) || "lit".equals(g.get("state")) || "labelled".equals(g.get("state")))
                 .map(g -> g.get("name") + "/" + g.get("state")).toList()).as("AF-16's goldens")
                 .containsExactlyInAnyOrder("DataTable/labelled", "Graph/lit", "GraphView/lit", "Chat/followups");
+        assertThat(surfaces.stream().filter(g -> List.of("select", "actions", "confirm", "confirm-bound").contains(String.valueOf(g.get("state"))) || "DataTable/empty".equals(g.get("name") + "/" + g.get("state")))
+                .map(g -> g.get("name") + "/" + g.get("state")).toList()).as("the pick, row action and confirm goldens")
+                .containsExactly("DataTable/select", "DataTable/actions", "DataTable/empty", "Toolbar/confirm", "Toolbar/confirm-bound");
         assertThat(surfaces.stream().map(g -> g.get("surfaceId")).distinct().count()).as("one surface id per golden").isEqualTo(surfaces.size());
     }
 
@@ -514,6 +541,51 @@ class VizCatalogTest {
         assertThatThrownBy(() -> Surfaces.dataTable("pages", List.of(Map.of("key", "title")), "/pages", "", "Add the page")).hasMessageContaining("rowActionLabel names the button of a rowAction");
         // lit is row data: Graph and GraphView take no new option (AF-15)
         assertThatThrownBy(() -> Surfaces.graphView("g", "/n", "/e", "force", Map.of("lit", true))).hasMessageContaining("no property lit");
+    }
+
+    /**
+     * A DataTable's select (GEO-D-06), its rowActions (GEO-D-07) and its empty
+     * words, and a Toolbar action's confirm step, with the builders that write them and refuse what the catalog does not say.
+     */
+    @Test
+    void aTablePicksRowsAndAToolbarActionAsksFirst() {
+        JsonNode c = VizCatalog.catalog().path("components");
+        JsonNode select = c.at("/DataTable/properties/select");
+        List<String> keys = new java.util.ArrayList<>();
+        select.path("properties").fieldNames().forEachRemaining(keys::add);
+        assertThat(keys).containsExactly("key", "map", "max", "label", "clearOn", "focus");
+        assertThat(select.path("required")).extracting(JsonNode::asText).containsExactly("key");
+        assertThat(select.at("/properties/max/maximum").asInt()).isEqualTo(Surfaces.MAX_PICKED).isEqualTo(8);
+        assertThat(select.path("additionalProperties").asBoolean(true)).isFalse();
+        assertThat(c.at("/DataTable/properties/rowActions/items/required")).extracting(JsonNode::asText).containsExactly("action", "label");
+        assertThat(c.at("/DataTable/properties/emptyText/type").asText()).isEqualTo("string");
+        JsonNode confirm = c.at("/Toolbar/properties/actions/items/properties/confirm");
+        assertThat(confirm.path("required")).extracting(JsonNode::asText).containsExactly("title");
+        assertThat(confirm.at("/properties/text/description").asText()).contains("data model path");
+
+        assertThat(Surfaces.tableSelect("alias", "watch", 8, "Show on the map", "scope", "route"))
+                .isEqualTo(Map.of("key", "alias", "map", "watch", "max", 8, "label", "Show on the map", "clearOn", "scope", "focus", "route"));
+        assertThat(Surfaces.tableSelect("alias", "", null, null, " ", null)).isEqualTo(Map.of("key", "alias"));
+        Map<String, Object> table = Surfaces.dataTable("people", List.of(Map.of("key", "alias", "title", "Who")), "/people",
+                Map.of("sort", "-places", "pageSize", 20, "select", Surfaces.tableSelect("alias", "watch", null, null, null, null),
+                        "rowActions", List.of(Surfaces.tableAction("show", "Show")), "emptyText", "None yet."));
+        assertThat(table).containsEntry("sort", "-places").containsEntry("pageSize", 20).containsEntry("emptyText", "None yet.")
+                .containsEntry("select", Map.of("key", "alias", "map", "watch")).containsEntry("rowActions", List.of(Map.of("action", "show", "label", "Show")));
+        Map<String, Object> ask = Surfaces.confirm("Clear alerts", "/status/0/prompt", "Clear", "Cancel");
+        assertThat(Surfaces.toolbar("tools", "", List.of(Surfaces.toolbarAction("Clear alerts", "clear-alerts", ask))).get("actions"))
+                .isEqualTo(List.of(Map.of("label", "Clear alerts", "action", "clear-alerts", "confirm", ask)));
+        assertThat(Surfaces.confirm("Sure?", null, "", null)).isEqualTo(Map.of("title", "Sure?"));
+
+        assertThatThrownBy(() -> Surfaces.tableSelect(" ", null, null, null, null, null)).hasMessageContaining("pick key");
+        assertThatThrownBy(() -> Surfaces.tableSelect("alias", null, 9, null, null, null)).hasMessageContaining("1 to 8");
+        assertThatThrownBy(() -> Surfaces.tableSelect("alias", null, 0, null, null, null)).hasMessageContaining("1 to 8");
+        assertThatThrownBy(() -> Surfaces.dataTable("t", List.of(Map.of("key", "a")), "/r", Map.of("select", Map.of("key", "a", "colour", "red")))).hasMessageContaining("no property colour");
+        assertThatThrownBy(() -> Surfaces.dataTable("t", List.of(Map.of("key", "a")), "/r", Map.of("rowActions", List.of(Map.of("action", "x"))))).hasMessageContaining("{action, label}");
+        assertThatThrownBy(() -> Surfaces.dataTable("t", List.of(Map.of("key", "a")), "/r", Map.of("picks", 3))).hasMessageContaining("no option picks");
+        assertThatThrownBy(() -> Surfaces.dataTable("t", List.of(Map.of("key", "a")), "/r", Map.of("rowActionLabel", "Open"))).hasMessageContaining("rowActionLabel");
+        assertThatThrownBy(() -> Surfaces.confirm(" ", "x", null, null)).hasMessageContaining("has a title");
+        assertThatThrownBy(() -> Surfaces.toolbar("t", "", List.of(Map.of("label", "Go", "action", "go", "confirm", Map.of("title", "Go?", "colour", "red"))))).hasMessageContaining("no property colour");
+        assertThatThrownBy(() -> Surfaces.toolbarAction("", "go", null)).hasMessageContaining("a label and an action");
     }
 
     @Test

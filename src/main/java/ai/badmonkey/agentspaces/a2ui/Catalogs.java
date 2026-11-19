@@ -61,6 +61,9 @@ final class Catalogs {
                 throw new IllegalArgumentException(component + "'s " + option.getKey() + " is the builder's own argument, not an option");
             }
             JsonNode schema = resolve(catalog, properties.path(option.getKey()));
+            if (properties.path(option.getKey()).isMissingNode() && Surfaces.ENVELOPE_KEYS.contains("@" + option.getKey())) {
+                throw new IllegalArgumentException(component + "." + option.getKey() + " is A2UI 1.0's @" + option.getKey() + " envelope key, not " + option.getKey());
+            }
             if (properties.path(option.getKey()).isMissingNode()) {
                 throw new IllegalArgumentException(component + " has no property " + option.getKey() + "; it takes " + names(properties));
             }

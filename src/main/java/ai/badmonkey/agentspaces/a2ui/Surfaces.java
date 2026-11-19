@@ -390,6 +390,111 @@ public final class Surfaces {
         return checked(m);
     }
 
+    /**
+     * A {@link #dataTable} with the rest of the table's properties as options: {@code sort}, {@code filter},
+     * {@code pageSize}, {@code rowAction}, {@code rowActionLabel}, {@code rowActions} (from {@link #tableAction}),
+     * {@code select} (from {@link #tableSelect}) and {@code emptyText}; one the catalog does not declare is refused, and a
+     * blank or null option is left out.
+     */
+    public static Map<String, Object> dataTable(String id, List<Map<String, Object>> columns, String rows, Map<String, Object> options) {
+        Map<String, Object> m = viz(id, "DataTable");
+        m.put("columns", List.copyOf(columns));
+        m.put("rows", rows);
+        JsonNode declared = VizCatalog.CATALOG.path("components").path("DataTable").path("properties");
+        if (options != null) {
+            options.forEach((k, v) -> {
+                if (!declared.has(k) || "id".equals(k) || "component".equals(k) || "columns".equals(k) || "rows".equals(k)) {
+                    throw new IllegalArgumentException("DataTable has no option " + k + " in " + VizCatalog.ID);
+                }
+                if (v != null && !(v instanceof String str && str.isBlank())) {
+                    m.put(k, v);
+                }
+            });
+        }
+        if (m.containsKey("rowActionLabel") && !m.containsKey("rowAction")) {
+            throw new IllegalArgumentException("a DataTable's rowActionLabel names the button of a rowAction, and " + id + " has none");
+        }
+        if (m.containsKey("select")) {
+            checkSelect(m.get("select"));
+        }
+        if (m.get("rowActions") instanceof List<?> list) {
+            list.forEach(Surfaces::checkTableAction);
+        } else if (m.containsKey("rowActions")) {
+            throw new IllegalArgumentException("a DataTable's rowActions is a list of {action, label}");
+        }
+        return checked(m);
+    }
+
+    /** The most keys a table's select picks at once: the look's categorical hues fix eight (agentspaces-geo's pick set). */
+    public static final int MAX_PICKED = 8;
+
+    /**
+     * A DataTable's select (srad/agentspaces-geo.md GEO-D-06): a checkbox per row that adds the row's {@code key} column to the
+     * pick set of the GeoMap {@code map} (blank for the GeoLayout's map), at most {@code max} (null for 8, else 1 to 8) at
+     * once; {@code label} heads the checkbox column (blank for "Show on the map"); a change of the {@code clearOn}
+     * column's value empties the set; {@code focus} names a column holding a map feature's id, whose first-column text
+     * then flies the map to it. Blank arguments are left out.
+     */
+    public static Map<String, Object> tableSelect(String key, String map, Integer max, String label, String clearOn, String focus) {
+        Map<String, Object> s = new LinkedHashMap<>();
+        s.put("key", key);
+        if (map != null && !map.isBlank()) {
+            s.put("map", map);
+        }
+        if (max != null) {
+            s.put("max", max);
+        }
+        for (String[] kv : new String[][] {{"label", label}, {"clearOn", clearOn}, {"focus", focus}}) {
+            if (kv[1] != null && !kv[1].isBlank()) {
+                s.put(kv[0], kv[1]);
+            }
+        }
+        checkSelect(s);
+        return Map.copyOf(s);
+    }
+
+    private static void checkSelect(Object value) {
+        if (!(value instanceof Map<?, ?> s)) {
+            throw new IllegalArgumentException("a DataTable's select is an object with a key: " + value);
+        }
+        for (Object k : s.keySet()) {
+            if (!List.of("key", "map", "max", "label", "clearOn", "focus").contains(k)) {
+                throw new IllegalArgumentException("a DataTable's select has no property " + k);
+            }
+        }
+        if (!(s.get("key") instanceof String key) || key.isBlank()) {
+            throw new IllegalArgumentException("a DataTable's select names the column whose value is the row's pick key");
+        }
+        if (s.containsKey("max")) {
+            Object v = s.get("max");
+            boolean whole = v instanceof Integer || v instanceof Long || v instanceof Short || v instanceof Byte;
+            if (!whole || ((Number) v).longValue() < 1 || ((Number) v).longValue() > MAX_PICKED) {
+                throw new IllegalArgumentException("a DataTable's select.max is a whole number from 1 to " + MAX_PICKED + ": " + v);
+            }
+        }
+        for (String k : List.of("map", "label", "clearOn", "focus")) {
+            if (s.containsKey(k) && !(s.get(k) instanceof String)) {
+                throw new IllegalArgumentException("a DataTable's select." + k + " is a string: " + s.get(k));
+            }
+        }
+    }
+
+    /** One of a DataTable's rowActions: the action a row's button dispatches with {@code {row}}, and the button's words. */
+    public static Map<String, Object> tableAction(String action, String label) {
+        Map<String, Object> a = new LinkedHashMap<>();
+        a.put("action", action);
+        a.put("label", label);
+        checkTableAction(a);
+        return Map.copyOf(a);
+    }
+
+    private static void checkTableAction(Object value) {
+        if (!(value instanceof Map<?, ?> a) || !(a.get("action") instanceof String action) || action.isBlank()
+                || !(a.get("label") instanceof String label) || label.isBlank() || !List.of("action", "label").containsAll(a.keySet())) {
+            throw new IllegalArgumentException("a DataTable's row action is {action, label}, both words: " + value);
+        }
+    }
+
     public static Map<String, Object> map(String id, List<Map<String, Object>> layers, String markerAction) {
         return map(id, layers, markerAction, Map.of());
     }
@@ -472,14 +577,73 @@ public final class Surfaces {
         return checked(m);
     }
 
-    /** A row of actions: each {@code {label, action, primary?, context?}}. */
+    /** A row of actions: each {@code {label, action, primary?, context?, confirm?}} ({@link #toolbarAction} for a confirm). */
     public static Map<String, Object> toolbar(String id, String title, List<Map<String, Object>> actions) {
+        for (Map<String, Object> a : actions) {
+            if (a.containsKey("confirm")) {
+                checkConfirm(a.get("confirm"));
+            }
+        }
         Map<String, Object> m = viz(id, "Toolbar");
         if (title != null && !title.isBlank()) {
             m.put("title", title);
         }
         m.put("actions", List.copyOf(actions));
         return checked(m);
+    }
+
+    /**
+     * A toolbar action that asks first: its label, the action, and a {@link #confirm}
+     * step; the action is dispatched only on the dialog's yes.
+     */
+    public static Map<String, Object> toolbarAction(String label, String action, Map<String, Object> confirm) {
+        if (label == null || label.isBlank() || action == null || action.isBlank()) {
+            throw new IllegalArgumentException("a toolbar action has a label and an action");
+        }
+        Map<String, Object> a = new LinkedHashMap<>();
+        a.put("label", label);
+        a.put("action", action);
+        if (confirm != null) {
+            checkConfirm(confirm);
+            a.put("confirm", confirm);
+        }
+        return Map.copyOf(a);
+    }
+
+    /**
+     * A toolbar action's confirm step: the dialog's title, its question ({@code text}: literal words, or a data model
+     * path such as {@code /status/0/prompt}, as Notice's text takes), and the words of its yes and no buttons
+     * (blank for Yes and Cancel). The no button takes the focus; Escape and no dispatch nothing.
+     */
+    public static Map<String, Object> confirm(String title, String text, String yes, String no) {
+        Map<String, Object> c = new LinkedHashMap<>();
+        c.put("title", title);
+        for (String[] kv : new String[][] {{"text", text}, {"yes", yes}, {"no", no}}) {
+            if (kv[1] != null && !kv[1].isBlank()) {
+                c.put(kv[0], kv[1]);
+            }
+        }
+        checkConfirm(c);
+        return Map.copyOf(c);
+    }
+
+    private static void checkConfirm(Object value) {
+        if (!(value instanceof Map<?, ?> c)) {
+            throw new IllegalArgumentException("a toolbar action's confirm is an object with a title: " + value);
+        }
+        for (Object k : c.keySet()) {
+            if (!List.of("title", "text", "yes", "no").contains(k)) {
+                throw new IllegalArgumentException("a toolbar action's confirm has no property " + k);
+            }
+        }
+        if (!(c.get("title") instanceof String t) || t.isBlank()) {
+            throw new IllegalArgumentException("a toolbar action's confirm has a title");
+        }
+        for (String k : List.of("text", "yes", "no")) {
+            if (c.containsKey(k) && !(c.get(k) instanceof String)) {
+                throw new IllegalArgumentException("a toolbar action's confirm." + k + " is words: " + c.get(k));
+            }
+        }
     }
 
     /** A toolbar whose overflow is a {@link #menu} by id. */
@@ -599,6 +763,11 @@ public final class Surfaces {
             }
             for (Map.Entry<?, ?> e : m.entrySet()) {
                 String key = String.valueOf(e.getKey());
+                // 1.0's single-@ rule: below a component's root, a key matching ^@([^@]|$) other than @path or @call is
+                // reserved (INVALID_RESERVED_KEY); a literal key that starts with @ is written doubled, @@type for @type
+                if (reserved(key) && !"@path".equals(key) && !"@call".equals(key)) {
+                    throw new IllegalArgumentException(where + "." + key + " is a reserved A2UI 1.0 key; a literal key that starts with @ is written @" + key);
+                }
                 binding(catalog, where + "." + key, e.getValue(), Catalogs.property(catalog, s, key));
             }
         } else if (value instanceof List<?> l) {
@@ -619,11 +788,31 @@ public final class Surfaces {
         String name = String.valueOf(component.get("component"));
         JsonNode schema = catalog.path("components").path(name);
         for (Map.Entry<String, Object> e : component.entrySet()) {
-            if (!"id".equals(e.getKey()) && !"component".equals(e.getKey())) {
-                binding(catalog, name + "." + e.getKey(), e.getValue(), Catalogs.property(catalog, schema, e.getKey()));
+            String key = e.getKey();
+            // 1.0 final (2026-11-10, spec §2.9): a component's envelope keys are @catalogId, @accessibility, @metadata
+            // and @checks; their bare names are ordinary properties, so one the component does not declare is refused
+            if (ENVELOPE_KEYS.contains("@" + key) && !schema.path("properties").has(key)) {
+                throw new IllegalArgumentException(name + "." + key + " is A2UI 1.0's @" + key + " envelope key, not " + key);
+            }
+            if (reserved(key) && !ENVELOPE_KEYS.contains(key)) {
+                throw new IllegalArgumentException(name + "." + key + " is a reserved A2UI 1.0 key; a component's root takes only " + ENVELOPE_KEYS);
+            }
+            if (!"id".equals(key) && !"component".equals(key)) {
+                binding(catalog, name + "." + key, e.getValue(), Catalogs.property(catalog, schema, key));
             }
         }
         return component;
+    }
+
+    /**
+     * A2UI 1.0's component envelope keys (spec §2.9): the only {@code @}-prefixed keys at a component's root. {@code id}
+     * and {@code component} stay bare, as do {@code createSurface.catalogId} and a function call's {@code catalogId}.
+     */
+    public static final Set<String> ENVELOPE_KEYS = Set.of("@catalogId", "@accessibility", "@metadata", "@checks");
+
+    /** A key in 1.0's reserved single-{@code @} namespace, {@code ^@([^@]|$)}; a doubled {@code @@} is a literal. */
+    static boolean reserved(String key) {
+        return key.startsWith("@") && !key.startsWith("@@");
     }
 
     /** A viz or widgets component, its properties walked by its own catalog before a builder hands it out. */
