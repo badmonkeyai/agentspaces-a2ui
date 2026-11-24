@@ -230,6 +230,7 @@ class VizCatalogTest {
                 List.of("Spend by group", "spend", "budget", "claims-fleet", "ops")));
         // GEO-D-01: a column chart split by a column, aggregated and sorted; GEO-G-01: a layered graph of two tables
         surfaces.addAll(chartGoldens());
+        surfaces.addAll(heatmapGoldens());
         surfaces.add(golden("DataTable", VizCatalog.ID, List.of(Surfaces.dataTable("claims", List.of(Map.of("key", "id", "title", "Claim"), Map.of("key", "amount", "title", "Amount", "format", "number")), "/claims", "open")),
                 Map.of("claims", List.of(Map.of("id", "C-1001", "amount", 1200), Map.of("id", "C-1002", "amount", 340))), List.of("Claim", "Amount", "C-1001", "C-1002")));
         // icons that move, tracks, areas, alert boxes, a highlight, both actions
@@ -264,6 +265,7 @@ class VizCatalogTest {
         surfaces.add(golden("DataTable", "empty", VizCatalog.ID, List.of(Surfaces.dataTable("finished", List.of(Map.of("key", "name", "title", "Finished run")), "/finished",
                         Map.of("emptyText", "No run has finished yet."))),
                 Map.of("finished", List.of()), List.of("Finished run", "No run has finished yet.")));
+        surfaces.addAll(taskTableGoldens());
         surfaces.add(golden("Toolbar", "confirm", VizCatalog.ID, List.of(Surfaces.toolbar("bar", "Desk", List.of(Surfaces.toolbarAction("Clear the list", "list.clear",
                         Surfaces.confirm("Clear the list", "Clear every row of the list?", "Clear", "Cancel"))))),
                 Map.of(), List.of("Desk", "Clear the list")));
@@ -364,6 +366,109 @@ class VizCatalogTest {
                                 Map.of("source", "claim", "target", "travel", "rel", "charged to"))),
                 List.of("Why the claim is held", "Claim C-1001", "Missing receipt", "Receipts policy", "Travel budget")));
         return out;
+    }
+
+    /**
+     * GEO-D-08 (srad/agentspaces-geo.md): the heatmap mark in four states, with every prop it adds: fixed
+     * orders (an hour no row has still drawn), small multiples, the pick, the focus column, the cell action and a selected
+     * cell (ringed).
+     */
+    static List<Map<String, Object>> heatmapGoldens() {
+        List<Map<String, Object>> out = new java.util.ArrayList<>();
+        Map<String, Object> heat = Surfaces.heatmap("visits", "/visits", "hour", "day", "count", Map.of("title", "Visits by hour", "unit", "visits",
+                "xOrder", List.of("08", "09", "10", "11"), "rowOrder", List.of("Mon", "Tue", "Wed"), "facet", "person", "pick", Surfaces.heatmapPick("person"),
+                "focus", "place", "cellAction", "visit.open", "selected", "/slot"));
+        Map<String, Object> busy = Map.of("person", "Ada", "day", "Mon", "hour", "09", "count", 5, "place", "desk-north");
+        List<Map<String, Object>> visits = List.of(Map.of("person", "Ada", "day", "Mon", "hour", "08", "count", 3, "place", "desk-north"), busy,
+                Map.of("person", "Ada", "day", "Tue", "hour", "10", "count", 2, "place", "lab-2"),
+                Map.of("person", "Ben", "day", "Mon", "hour", "08", "count", 1, "place", "desk-south"),
+                Map.of("person", "Ben", "day", "Wed", "hour", "10", "count", 4, "place", "lab-2"));
+        out.add(golden("Visualize", "heatmap", VizCatalog.ID, List.of(heat), Map.of("visits", visits, "slot", busy),
+                List.of("Visits by hour", "Ada", "Ben", "Mon", "Tue", "Wed", "08", "11")));
+        out.add(golden("Visualize", "heatmap-empty", VizCatalog.ID, List.of(heat), Map.of("visits", List.of()), List.of("Visits by hour", "No rows yet")));
+        out.add(golden("Visualize", "heatmap-loading", VizCatalog.ID, List.of(heat), Map.of(), List.of("Visits by hour", "Loading the rows")));
+        out.add(golden("Visualize", "heatmap-error", VizCatalog.ID, List.of(heat), Map.of("visits", "not a list"), List.of("Visits by hour", "Unavailable", "do not read as a table")));
+        return out;
+    }
+
+    /**
+     * GEO-D-09 to D-11: a table of agent tasks in four states, with a state column (the A2A word beside its icon), a row
+     * action that picks the row's keys (GEO-D-10) and a filter by a value at a path (the lane the page shows).
+     */
+    static List<Map<String, Object>> taskTableGoldens() {
+        List<Map<String, Object>> out = new java.util.ArrayList<>();
+        Map<String, Object> table = Surfaces.dataTable("tasks", List.of(Map.of("key", "task", "title", "Task"), Map.of("key", "lane", "title", "Lane"),
+                        Map.of("key", "state", "title", "State", "format", "state"), Map.of("key", "progress", "title", "Progress", "format", "number")), "/tasks",
+                Map.of("rowActions", List.of(Surfaces.tableAction("task.show", "Show"), Surfaces.tablePickAction("task.both", "Show both", "pair", "")),
+                        "rowFilter", Surfaces.rowFilter("/lane", "lane"), "emptyText", "No task yet."));
+        List<Map<String, Object>> tasks = List.of(
+                Map.of("task", "Survey the dock", "lane", "north", "state", "working", "progress", 40, "pair", List.of("crane-3", "crane-7")),
+                Map.of("task", "Count the pallets", "lane", "north", "state", "completed", "progress", 100, "pair", List.of("forklift-2")),
+                Map.of("task", "Check the gate", "lane", "south", "state", "failed", "progress", 10, "pair", List.of()));
+        out.add(golden("DataTable", "tasks", VizCatalog.ID, List.of(table), Map.of("tasks", tasks, "lane", "north"),
+                List.of("Task", "State", "Survey the dock", "working", "Count the pallets", "completed", "Show both", "2 of 3 rows")));
+        out.add(golden("DataTable", "tasks-empty", VizCatalog.ID, List.of(table), Map.of("tasks", List.of(), "lane", "north"), List.of("Task", "No task yet.")));
+        out.add(golden("DataTable", "tasks-loading", VizCatalog.ID, List.of(table), Map.of(), List.of("Task", "Loading the rows")));
+        out.add(golden("DataTable", "tasks-error", VizCatalog.ID, List.of(table), Map.of("tasks", "not a list"), List.of("Task", "Unavailable", "do not read as a table")));
+        return out;
+    }
+
+    @Test
+    void aHeatmapTakesItsPropsAndNoOtherMarkDoes() {
+        JsonNode p = VizCatalog.catalog().at("/components/Visualize/properties");
+        assertThat(p.at("/mark/enum")).extracting(JsonNode::asText).containsExactly("bar", "column", "line", "area", "scatter", "table", "heatmap");
+        for (String k : Surfaces.HEATMAP_OPTIONS) {
+            assertThat(p.path(k).path("description").asText()).as(k).isNotBlank();
+        }
+        assertThat(p.at("/pick/required")).extracting(JsonNode::asText).containsExactly("by");
+        Map<String, Object> h = Surfaces.heatmap("week", "/cells", "x", "y", "value", Map.of("xOrder", Surfaces.HOURS, "rowOrder", Surfaces.WEEKDAYS,
+                "facet", "alias", "pick", Surfaces.heatmapPick("alias"), "focus", "place", "cellAction", "cell.open", "selected", "/slot", "aggregate", "sum"));
+        assertThat(h).containsEntry("mark", "heatmap").containsEntry("row", "y").containsEntry("y", "value").containsEntry("selected", "/slot");
+        assertThat(Surfaces.HOURS).hasSize(24).startsWith("00", "01").endsWith("23");
+        assertThat(Surfaces.WEEKDAYS).containsExactly("Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat");
+        assertThat(Surfaces.heatmap("count", "/cells", "x", "y", null, Map.of())).doesNotContainKey("y");
+        assertThatThrownBy(() -> Surfaces.visualize("v", "/c", "heatmap", "x", "v", Map.of())).hasMessageContaining("row column");
+        assertThatThrownBy(() -> Surfaces.visualize("v", "/c", "column", "x", "v", Map.of("facet", "alias"))).hasMessageContaining("Visualize.facet is a heatmap's");
+        assertThatThrownBy(() -> Surfaces.visualize("v", "/c", "heatmap", "x", List.of("a", "b"), Map.of("row", "y"))).hasMessageContaining("one column");
+        assertThatThrownBy(() -> Surfaces.heatmap("v", "/c", "x", "y", "v", Map.of("xOrder", List.of("08", "08")))).hasMessageContaining("each once");
+        assertThatThrownBy(() -> Surfaces.heatmap("v", "/c", "x", "y", "v", Map.of("xOrder", List.of()))).hasMessageContaining("xOrder");
+        // the catalog's maxItems, read from the catalog so the builder and the schema cannot drift apart
+        assertThat(VizCatalog.catalog().at("/components/Visualize/properties/xOrder/maxItems").asInt()).isEqualTo(Surfaces.MAX_HEAT_CATEGORIES);
+        assertThat(VizCatalog.catalog().at("/components/Visualize/properties/rowOrder/maxItems").asInt()).isEqualTo(Surfaces.MAX_HEAT_CATEGORIES);
+        List<String> many = java.util.stream.IntStream.range(0, Surfaces.MAX_HEAT_CATEGORIES + 1).mapToObj(i -> "c" + i).toList();
+        assertThat(Surfaces.heatmap("v", "/c", "x", "y", "v", Map.of("rowOrder", many.subList(0, Surfaces.MAX_HEAT_CATEGORIES)))).containsKey("rowOrder");
+        assertThatThrownBy(() -> Surfaces.heatmap("v", "/c", "x", "y", "v", Map.of("rowOrder", many))).hasMessageContaining("at most 400");
+        assertThatThrownBy(() -> Surfaces.heatmap("v", "/c", "x", "y", "v", Map.of("selected", "slot"))).hasMessageContaining("data model path");
+        assertThatThrownBy(() -> Surfaces.heatmap("v", "/c", "x", "y", "v", Map.of("pick", Map.of("by", "a", "show", "all")))).hasMessageContaining("{by:");
+        assertThatThrownBy(() -> Surfaces.heatmap("v", "/c", "x", "y", "v", Map.of("row", "z"))).hasMessageContaining("argument");
+        assertThatThrownBy(() -> Surfaces.heatmapPick(" ")).hasMessageContaining("pick.by");
+    }
+
+    @Test
+    void aTableFiltersByAPathPicksARowsKeysAndReadsATaskState() {
+        JsonNode p = VizCatalog.catalog().at("/components/DataTable/properties");
+        assertThat(p.at("/rowFilter/required")).extracting(JsonNode::asText).containsExactly("path", "match");
+        assertThat(p.at("/rowActions/items/properties/pick/required")).extracting(JsonNode::asText).containsExactly("from");
+        assertThat(p.at("/columns/items/properties/format/description").asText()).contains("state").contains("never colour alone");
+        assertThat(Surfaces.rowFilter("/slot", List.of("d", "h"))).containsEntry("match", List.of("d", "h"));
+        assertThat(Surfaces.rowFilter("/slot", "slot")).containsEntry("match", "slot").containsEntry("path", "/slot");
+        assertThat(Surfaces.tablePickAction("both", "Show both", "pair", "map")).containsEntry("pick", Map.of("from", "pair", "map", "map"));
+        assertThat(Surfaces.tablePickAction("both", "Show both", "pair", null)).containsEntry("pick", Map.of("from", "pair"));
+        assertThatThrownBy(() -> Surfaces.rowFilter("slot", "slot")).hasMessageContaining("data model path");
+        assertThatThrownBy(() -> Surfaces.rowFilter("/slot", List.of("d", "d"))).hasMessageContaining("each once");
+        assertThatThrownBy(() -> Surfaces.rowFilter("/slot", List.of())).hasMessageContaining("match");
+        assertThatThrownBy(() -> Surfaces.tablePickAction("both", "Show both", " ", null)).hasMessageContaining("pick");
+        // a pick that also dispatches its action (kismet-life-patterns §10.12): the keys' rows arrive after the click
+        assertThat(Surfaces.tablePickAction("both", "Show both", "pair", null, true)).containsEntry("pick", Map.of("from", "pair", "dispatch", true));
+        assertThat(Surfaces.tablePickAction("both", "Show both", "pair", null, false)).containsEntry("pick", Map.of("from", "pair"));
+        assertThat(p.at("/rowActions/items/properties/pick/properties/dispatch/type").asText()).isEqualTo("boolean");
+        assertThatThrownBy(() -> Surfaces.dataTable("t", List.of(Map.of("key", "a")), "/r", Map.of("rowActions", List.of(Map.of("action", "a", "label", "A",
+                "pick", Map.of("from", "x", "dispatch", "yes")))))).hasMessageContaining("dispatch");
+        List<Map<String, Object>> cols = List.of(Map.of("key", "a"));
+        assertThatThrownBy(() -> Surfaces.dataTable("t", cols, "/r", Map.of("rowFilter", Map.of("path", "/x")))).hasMessageContaining("match");
+        assertThatThrownBy(() -> Surfaces.dataTable("t", cols, "/r", Map.of("rowActions", List.of(Map.of("action", "a", "label", "A", "pick", Map.of("by", "x"))))))
+                .hasMessageContaining("pick");
+        assertThat(Surfaces.dataTable("t", cols, "/r", Map.of("rowFilter", Surfaces.rowFilter("/x", "a")))).containsKey("rowFilter");
     }
 
     /**

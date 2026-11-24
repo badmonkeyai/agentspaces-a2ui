@@ -392,8 +392,9 @@ public final class Surfaces {
 
     /**
      * A {@link #dataTable} with the rest of the table's properties as options: {@code sort}, {@code filter},
-     * {@code pageSize}, {@code rowAction}, {@code rowActionLabel}, {@code rowActions} (from {@link #tableAction}),
-     * {@code select} (from {@link #tableSelect}) and {@code emptyText}; one the catalog does not declare is refused, and a
+     * {@code pageSize}, {@code rowAction}, {@code rowActionLabel}, {@code rowActions} (from {@link #tableAction}
+     * or {@link #tablePickAction}), {@code select} (from {@link #tableSelect}), {@code rowFilter} (from {@link #rowFilter})
+     * and {@code emptyText}; one the catalog does not declare is refused, and a
      * blank or null option is left out.
      */
     public static Map<String, Object> dataTable(String id, List<Map<String, Object>> columns, String rows, Map<String, Object> options) {
@@ -421,6 +422,9 @@ public final class Surfaces {
             list.forEach(Surfaces::checkTableAction);
         } else if (m.containsKey("rowActions")) {
             throw new IllegalArgumentException("a DataTable's rowActions is a list of {action, label}");
+        }
+        if (m.containsKey("rowFilter")) {
+            checkRowFilter(m.get("rowFilter"), "a DataTable's rowFilter");
         }
         return checked(m);
     }
@@ -488,10 +492,47 @@ public final class Surfaces {
         return Map.copyOf(a);
     }
 
+    /**
+     * One of a DataTable's rowActions that sets the map's pick set in place of a dispatch (GEO-D-10, as a Watchbox's pick
+     * action does): the button's {@code action} name and {@code label}, the row's column {@code from} that lists the keys
+     * (the first eight are taken), and the GeoMap {@code map} whose set it is (blank for the GeoLayout's map, else the
+     * table's select.map).
+     */
+    public static Map<String, Object> tablePickAction(String action, String label, String from, String map) {
+        return tablePickAction(action, label, from, map, false);
+    }
+
+    /**
+     * {@link #tablePickAction(String, String, String, String)}, and with {@code dispatch} the button also dispatches its
+     * action with {@code {row}}: for an action that brings the keys' rows (a pattern the page does not hold yet), so the
+     * first eight keys are picked even where no table lists them yet, each shown as its rows arrive.
+     */
+    public static Map<String, Object> tablePickAction(String action, String label, String from, String map, boolean dispatch) {
+        Map<String, Object> pick = new LinkedHashMap<>();
+        pick.put("from", from);
+        if (map != null && !map.isBlank()) {
+            pick.put("map", map);
+        }
+        if (dispatch) {
+            pick.put("dispatch", true);
+        }
+        Map<String, Object> a = new LinkedHashMap<>();
+        a.put("action", action);
+        a.put("label", label);
+        a.put("pick", Map.copyOf(pick));
+        checkTableAction(a);
+        return Map.copyOf(a);
+    }
+
     private static void checkTableAction(Object value) {
         if (!(value instanceof Map<?, ?> a) || !(a.get("action") instanceof String action) || action.isBlank()
-                || !(a.get("label") instanceof String label) || label.isBlank() || !List.of("action", "label").containsAll(a.keySet())) {
-            throw new IllegalArgumentException("a DataTable's row action is {action, label}, both words: " + value);
+                || !(a.get("label") instanceof String label) || label.isBlank() || !List.of("action", "label", "pick").containsAll(a.keySet())) {
+            throw new IllegalArgumentException("a DataTable's row action is {action, label}, both words, and an optional pick: " + value);
+        }
+        if (a.containsKey("pick") && !(a.get("pick") instanceof Map<?, ?> p && List.of("from", "map", "dispatch").containsAll(p.keySet())
+                && p.get("from") instanceof String from && !from.isBlank() && (!p.containsKey("map") || p.get("map") instanceof String)
+                && (!p.containsKey("dispatch") || p.get("dispatch") instanceof Boolean))) {
+            throw new IllegalArgumentException("a DataTable row action's pick is {from: <the row's column that lists the keys>, map?, dispatch?: <boolean>}: " + a.get("pick"));
         }
     }
 
@@ -1023,7 +1064,10 @@ public final class Surfaces {
      * {@code Visualize} (srad/agentspaces-geo.md §3.4, GEO-D-01): a chart of the table at {@code rows} by a spec: the
      * {@code mark} (bar, column, line, area, scatter or table), the {@code x} column, and {@code y}, one column or a list
      * of them; {@code options} carries {@code color}, {@code aggregate}, {@code sort}, {@code title}, {@code unit} and
-     * {@code table}, each checked against the catalog.
+     * {@code table}, each checked against the catalog. A {@code heatmap} (srad/agentspaces-geo.md GEO-D-08) also
+     * names its {@code row} column and may carry {@code xOrder}, {@code rowOrder}, {@code facet}, {@code pick} (from
+     * {@link #heatmapPick}), {@code map}, {@code focus}, {@code cellAction} and {@code selected}; those are refused on any
+     * other mark, and a heatmap without its row column is refused, as {@link #heatmap} checks.
      */
     public static Map<String, Object> visualize(String id, String rows, String mark, String x, Object y, Map<String, Object> options) {
         if (rows == null || !rows.startsWith("/")) {
@@ -1047,7 +1091,122 @@ public final class Surfaces {
             options.forEach((k, v) -> { if (v != null && !(v instanceof String str && str.isBlank())) { checked.put(k, v); m.put(k, v); } });
         }
         Catalogs.checkOptions(VizCatalog.catalog(), "Visualize", checked);
+        checkHeatmap(m);
         return checked(m);
+    }
+
+    /** The properties only a heatmap reads (GEO-D-08). */
+    public static final List<String> HEATMAP_OPTIONS = List.of("row", "xOrder", "rowOrder", "facet", "pick", "map", "focus", "cellAction", "selected");
+    /** The most small multiples a heatmap draws. */
+    public static final int MAX_FACETS = 8;
+    /** The most categories a heatmap's xOrder or rowOrder lists (the catalog's maxItems). */
+    public static final int MAX_HEAT_CATEGORIES = 400;
+    /** The 24 hours of a day as two-digit words, "00" to "23": a heatmap's xOrder for a day by the hour. */
+    public static final List<String> HOURS = java.util.stream.IntStream.range(0, 24).mapToObj(h -> (h < 10 ? "0" : "") + h).toList();
+    /** The seven days of a week from Sunday, "Sun" to "Sat": a heatmap's rowOrder for a week (ISO 8601's weeks start on Monday; turn it if yours does). */
+    public static final List<String> WEEKDAYS = List.of("Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat");
+
+    /**
+     * {@code Visualize mark: heatmap} (srad/agentspaces-geo.md GEO-D-08): a grid of {@code x} across by {@code row}
+     * down, each cell's value the column {@code value} (null or blank for a count of the rows) aggregated by the option
+     * {@code aggregate}; {@code options} carries the rest ({@code xOrder}, {@code rowOrder}, {@code facet}, {@code pick},
+     * {@code map}, {@code focus}, {@code cellAction}, {@code selected}, {@code title}, {@code unit}, {@code table}).
+     *
+     * <pre>{@code
+     * Surfaces.heatmap("week", "/cells", "x", "y", "value", Map.of("xOrder", Surfaces.HOURS, "rowOrder", Surfaces.WEEKDAYS,
+     *         "facet", "alias", "pick", Surfaces.heatmapPick("alias"), "focus", "place", "cellAction", "cell.open", "selected", "/slot"));
+     * }</pre>
+     */
+    public static Map<String, Object> heatmap(String id, String rows, String x, String row, String value, Map<String, Object> options) {
+        Map<String, Object> o = new LinkedHashMap<>();
+        if (options != null) {
+            o.putAll(options);
+        }
+        if (o.containsKey("row")) {
+            throw new IllegalArgumentException("a heatmap names its row column as an argument, not an option");
+        }
+        o.put("row", row);
+        return visualize(id, rows, "heatmap", x, value, o);
+    }
+
+    /** A heatmap's pick (GEO-D-08): while a key is picked, only the rows whose column {@code by} holds a picked key are drawn. */
+    public static Map<String, Object> heatmapPick(String by) {
+        if (by == null || by.isBlank()) {
+            throw new IllegalArgumentException("a heatmap's pick.by names the column whose value is the row's pick key");
+        }
+        return Map.of("by", by);
+    }
+
+    private static void checkHeatmap(Map<String, Object> m) {
+        boolean heat = "heatmap".equals(m.get("mark"));
+        for (String k : HEATMAP_OPTIONS) {
+            if (!heat && m.containsKey(k)) {
+                throw new IllegalArgumentException("Visualize." + k + " is a heatmap's; mark " + m.get("mark") + " does not read it");
+            }
+        }
+        if (!heat) {
+            return;
+        }
+        if (!(m.get("row") instanceof String row) || row.isBlank()) {
+            throw new IllegalArgumentException("a heatmap names its row column, the categories down its side");
+        }
+        if (m.get("y") instanceof List<?> ys && ys.size() > 1) {
+            throw new IllegalArgumentException("a heatmap colours each cell by one column, not " + ys);
+        }
+        for (String k : List.of("xOrder", "rowOrder")) {
+            if (m.containsKey(k) && !(m.get(k) instanceof List<?> l && !l.isEmpty() && l.stream().allMatch(v -> v instanceof String)
+                    && l.stream().distinct().count() == l.size())) {
+                throw new IllegalArgumentException("a heatmap's " + k + " is a list of categories, each once: " + m.get(k));
+            }
+            if (m.get(k) instanceof List<?> l && l.size() > MAX_HEAT_CATEGORIES) {
+                throw new IllegalArgumentException("a heatmap's " + k + " lists at most " + MAX_HEAT_CATEGORIES + " categories, not " + l.size());
+            }
+        }
+        for (String k : List.of("facet", "map", "focus", "cellAction")) {
+            if (m.containsKey(k) && !(m.get(k) instanceof String v && !v.isBlank())) {
+                throw new IllegalArgumentException("a heatmap's " + k + " is a column or a name: " + m.get(k));
+            }
+        }
+        if (m.containsKey("selected") && !(m.get("selected") instanceof String sel && sel.startsWith("/"))) {
+            throw new IllegalArgumentException("a heatmap's selected is a data model path such as /slot: " + m.get("selected"));
+        }
+        if (m.containsKey("pick") && !(m.get("pick") instanceof Map<?, ?> p && p.size() == 1 && p.get("by") instanceof String by && !by.isBlank())) {
+            throw new IllegalArgumentException("a heatmap's pick is {by: <the column that holds the pick key>}: " + m.get("pick"));
+        }
+    }
+
+    /**
+     * The filter a DataTable's {@code rowFilter} and a GeoMap layer's {@code filter} share (GEO-M-12): keep the rows whose
+     * {@code match} columns (one, or several) equal the value at the data model {@code path}; a missing or empty value
+     * keeps every row.
+     */
+    public static Map<String, Object> rowFilter(String path, List<String> match) {
+        Map<String, Object> f = new LinkedHashMap<>();
+        f.put("path", path);
+        f.put("match", match != null && match.size() == 1 ? match.get(0) : match == null ? null : List.copyOf(match));
+        checkRowFilter(f, "a filter");
+        return Map.copyOf(f);
+    }
+
+    /** {@link #rowFilter(String, List)} on one column. */
+    public static Map<String, Object> rowFilter(String path, String match) {
+        return rowFilter(path, match == null ? null : List.of(match));
+    }
+
+    /** Checks a filter's shape: a path that starts with /, and a column or a list of columns, each once. */
+    public static void checkRowFilter(Object value, String what) {
+        if (!(value instanceof Map<?, ?> f) || !List.of("path", "match").containsAll(f.keySet())) {
+            throw new IllegalArgumentException(what + " is {path, match}: " + value);
+        }
+        if (!(f.get("path") instanceof String p) || !p.startsWith("/")) {
+            throw new IllegalArgumentException(what + "'s path is a data model path such as /slot: " + f.get("path"));
+        }
+        Object match = f.get("match");
+        boolean one = match instanceof String c && !c.isBlank();
+        boolean many = match instanceof List<?> l && !l.isEmpty() && l.stream().allMatch(c -> c instanceof String s && !s.isBlank()) && l.stream().distinct().count() == l.size();
+        if (!one && !many) {
+            throw new IllegalArgumentException(what + "'s match is a column or a list of columns, each once: " + match);
+        }
     }
 
     /**
