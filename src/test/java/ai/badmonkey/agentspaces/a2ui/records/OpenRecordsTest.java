@@ -53,6 +53,21 @@ class OpenRecordsTest {
                 List.of(new ChatMessage.Cite("file-q3", "data/q3-expenses.csv", "q3-expenses.csv")));
     }
 
+    /** A desk's request in a chat (version 3, srad/hitl.md §3.8). */
+    static ChatMessage chatV3Confirm() {
+        return new ChatMessage(ChatMessage.V3, "m-desk-1", "leads", new ChatMessage.From(ChatMessage.From.AGENT, "refunds-desk", "peer-9"),
+                "Refund 250 dollars on order o-7? Reply approve or reject (code K7Q2).", List.of(), "", AT, ChatMessage.PLAIN, List.of(),
+                new ChatMessage.Confirm("inv-7", "#refunds", "approval", "Refund 250 dollars on order o-7?", "orders#refund", "{\"amount\":250,\"order\":\"o-7\"}",
+                        "Refunds order o-7 in full.", AT.plusSeconds(3600), List.of("approve", "reject"), "optional", "K7Q2", "pending", "", List.of(), "", 0, 2),
+                null);
+    }
+
+    /** A person's answer to it (version 3). */
+    static ChatMessage chatV3Answer() {
+        return new ChatMessage(ChatMessage.V3, "m-ada-2", "leads", new ChatMessage.From(ChatMessage.From.PERSON, "ada", ""), "approve K7Q2 within policy",
+                List.of(), "m-desk-1", AT.plusSeconds(60), ChatMessage.PLAIN, List.of(), null, new ChatMessage.Answer("inv-7", "approve", "within policy", ""));
+    }
+
     static SharedFile fileV1() {
         return new SharedFile(SharedFile.V1, "file-q3", "q3-expenses.csv", "text/csv", 2048, "bafyroot", "sha256:ab", "ada", List.of("claims-desk"), AT, null, null);
     }
@@ -77,6 +92,8 @@ class OpenRecordsTest {
     void everyVersionIsPinnedAsCanonicalCborBesideItsJson() throws IOException {
         pin("chat_message_v1", chatV1(), ChatMessage.class);
         pin("chat_message_v2", chatV2(), ChatMessage.class);
+        pin("chat_message_v3_confirm", chatV3Confirm(), ChatMessage.class);
+        pin("chat_message_v3_answer", chatV3Answer(), ChatMessage.class);
         pin("shared_file_v1", fileV1(), SharedFile.class);
         pin("shared_file_v2", fileV2(), SharedFile.class);
         pin("working_on_v1", workingOn(), WorkingOn.class);
@@ -98,7 +115,52 @@ class OpenRecordsTest {
                 .hasMessageContaining("version 1").hasMessageContaining("format");
         assertThatThrownBy(() -> new SharedFile(SharedFile.V1, "f", "a.txt", "", 1, "", "", "", List.of(), AT, "a.txt", null))
                 .hasMessageContaining("version 1").hasMessageContaining("path");
-        assertThatThrownBy(() -> new ChatMessage(3, "m", "k", null, "", List.of(), "", AT, null, null)).hasMessageContaining("schemaVersion");
+        assertThatThrownBy(() -> new ChatMessage(4, "m", "k", null, "", List.of(), "", AT, null, null)).hasMessageContaining("schemaVersion");
+    }
+
+    @Test
+    void versionThreeCarriesARequestOrAnAnswerAndOlderVersionsNeither() {
+        ChatMessage ask = chatV3Confirm();
+        assertThat(ask.confirm().pending()).isTrue();
+        assertThat(CODEC.toJson(chatV2().asVersion(ChatMessage.V3))).as("a v3 line with neither block").doesNotContain("confirm").doesNotContain("answer");
+        // to an older reader the desk writes the text alone, which says how to reply in words
+        assertThat(ask.asVersion(ChatMessage.V2).confirm()).isNull();
+        assertThat(ask.asVersion(ChatMessage.V1).text()).contains("Reply approve or reject");
+        assertThatThrownBy(() -> new ChatMessage(ChatMessage.V2, "m", "k", null, "", List.of(), "", AT, null, null, ask.confirm(), null))
+                .hasMessageContaining("version 3");
+        assertThatThrownBy(() -> new ChatMessage(ChatMessage.V3, "m", "k", null, "", List.of(), "", AT, null, null, ask.confirm(),
+                new ChatMessage.Answer("inv-7", "approve", "", ""))).hasMessageContaining("not both");
+        // the decision, as the desk's later line shows it
+        ChatMessage.Confirm done = ask.confirm().decided("approved", List.of("person:ada", "person:bo"), "ok", 2);
+        assertThat(done.pending()).isFalse();
+        assertThat(done.by()).containsExactly("person:ada", "person:bo");
+        assertThat(done.question()).isEqualTo(ask.confirm().question());
+        // the defaults, and the bounds
+        ChatMessage.Confirm bare = new ChatMessage.Confirm("inv-1", null, null, "Go?", null, null, null, null, null, null, null, null, null, null, null, 0, 0);
+        assertThat(bare.kind()).isEqualTo("approval");
+        assertThat(bare.options()).containsExactly("approve", "reject");
+        assertThat(bare.reasons()).isEqualTo("optional");
+        assertThat(bare.arguments()).isEqualTo("{}");
+        assertThat(bare.quorum()).isEqualTo(1);
+        assertThatThrownBy(() -> new ChatMessage.Confirm("", null, null, "Go?", null, null, null, null, null, null, null, null, null, null, null, 0, 0))
+                .hasMessageContaining("request");
+        assertThatThrownBy(() -> new ChatMessage.Confirm("i", null, null, " ", null, null, null, null, null, null, null, null, null, null, null, 0, 0))
+                .hasMessageContaining("question");
+        assertThatThrownBy(() -> new ChatMessage.Confirm("i", null, "vote", "Go?", null, null, null, null, null, null, null, null, null, null, null, 0, 0))
+                .hasMessageContaining("kind");
+        assertThatThrownBy(() -> new ChatMessage.Confirm("i", null, null, "Go?", null, null, null, null, List.of("maybe"), null, null, null, null, null, null, 0, 0))
+                .hasMessageContaining("options");
+        assertThatThrownBy(() -> new ChatMessage.Confirm("i", null, null, "Go?", null, null, null, null, null, "always", null, null, null, null, null, 0, 0))
+                .hasMessageContaining("reasons");
+        assertThatThrownBy(() -> new ChatMessage.Confirm("i", null, null, "Go?", null, null, null, null, null, null, null, "decided", "", null, null, 0, 0))
+                .hasMessageContaining("verdict");
+        assertThatThrownBy(() -> new ChatMessage.Confirm("i", null, null, "Go?", null, null, null, null, null, null, null, "pending", "approved", null, null, 0, 0))
+                .hasMessageContaining("verdict");
+        assertThatThrownBy(() -> new ChatMessage.Confirm("i", null, null, "x".repeat(2001), null, null, null, null, null, null, null, null, null, null, null, 0, 0))
+                .hasMessageContaining("2000");
+        assertThatThrownBy(() -> new ChatMessage.Answer("inv-7", "yes", "", "")).hasMessageContaining("verdict");
+        assertThatThrownBy(() -> new ChatMessage.Answer("inv-7", "approve", "", "{}")).hasMessageContaining("amend");
+        assertThatThrownBy(() -> new ChatMessage.Answer(" ", "approve", "", "")).hasMessageContaining("request");
     }
 
     @Test
@@ -178,7 +240,7 @@ class OpenRecordsTest {
     void aWriterWritesVersionTwoOnlyWhenEveryReaderAdvertisesTheHint() {
         Map.Entry<String, String> hint = A2uiRecords.hint();
         assertThat(hint.getKey()).isEqualTo("a2ui.records");
-        assertThat(hint.getValue()).isEqualTo("2");
+        assertThat(hint.getValue()).isEqualTo("3");
         Map<String, String> v2 = Map.of("a2ui.records", "2", "wire.hashes", "1");
         Map<String, String> later = Map.of("a2ui.records", "3");
         Map<String, String> old = Map.of("wire.hashes", "1");
@@ -188,6 +250,13 @@ class OpenRecordsTest {
         assertThat(A2uiRecords.writesV2(List.of())).as("no reader meets the field").isTrue();
         assertThat(A2uiRecords.versionFor(List.of(v2, old))).isEqualTo(1);
         assertThat(A2uiRecords.versionFor(List.of(v2))).isEqualTo(2);
+        // by level: the lowest any reader advertises, never above the type's newest
+        assertThat(A2uiRecords.versionFor(List.of(later), A2uiRecords.latest("ChatMessage"))).isEqualTo(3);
+        assertThat(A2uiRecords.versionFor(List.of(later, v2), A2uiRecords.latest(ChatMessage.IRI))).as("a reader at 2 holds the line at 2").isEqualTo(2);
+        assertThat(A2uiRecords.versionFor(List.of(later), A2uiRecords.latest("SharedFile"))).as("SharedFile has no version 3").isEqualTo(2);
+        assertThat(A2uiRecords.versionFor(List.of(later, old), 3)).isEqualTo(1);
+        assertThat(A2uiRecords.versionFor(List.of(Map.of("a2ui.records", "9")), 3)).isEqualTo(3);
+        assertThat(A2uiRecords.versionFor(List.of(), 3)).isEqualTo(3);
     }
 
     private static <T> void pin(String name, T value, Class<T> type) throws IOException {

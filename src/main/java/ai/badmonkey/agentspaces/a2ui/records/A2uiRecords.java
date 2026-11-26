@@ -34,9 +34,12 @@ public final class A2uiRecords {
 
     /** The open namespace of the records. */
     public static final String NAMESPACE = "https://badmonkey.ai/agentspaces/a2ui/v1/";
-    /** The member hint a reader of version 2 advertises, and its value. */
+    /**
+     * The member hint a reader advertises, and its value: the newest version of the records it reads. 3 since slice 6.4
+     * of srad/cards.md (the chat's confirm block, {@link ChatMessage#V3}); a reader at 3 reads every version before it.
+     */
     public static final String HINT = "a2ui.records";
-    public static final String HINT_VALUE = "2";
+    public static final String HINT_VALUE = "3";
     /** The five records, in the order the SPEC lists them; {@link FunctionResponse} joined in 0.7.0 and has one version. */
     public static final List<Class<?>> RECORDS = List.of(ChatMessage.class, SharedFile.class, WorkingOn.class, ChatProgress.class, FunctionResponse.class);
 
@@ -67,6 +70,31 @@ public final class A2uiRecords {
     /** The version a writer writes for these readers: 2 when {@link #writesV2} allows it, else 1. */
     public static int versionFor(Collection<Map<String, String>> readerHints) {
         return writesV2(readerHints) ? 2 : 1;
+    }
+
+    /**
+     * The version a writer writes of a record whose newest version is {@code latest}: the lowest level the readers
+     * advertise ({@code a2ui.records}, 1 when a reader names none or a level that does not read), never above
+     * {@code latest}; {@code latest} when no member reads the type.
+     */
+    public static int versionFor(Collection<Map<String, String>> readerHints, int latest) {
+        int v = latest;
+        for (Map<String, String> hints : readerHints) {
+            String h = hints.get(HINT);
+            int level = h != null && h.matches("\\d{1,9}") ? Integer.parseInt(h) : 1;
+            v = Math.min(v, Math.max(1, level));
+        }
+        return v;
+    }
+
+    /** The newest version of a record, by its simple name or IRI: 3 for ChatMessage, 2 for SharedFile, 1 for the rest. */
+    public static int latest(String type) {
+        String simple = type == null ? "" : type.substring(type.lastIndexOf('/') + 1);
+        return switch (simple) {
+            case "ChatMessage" -> ChatMessage.V3;
+            case "SharedFile" -> SharedFile.V2;
+            default -> 1;
+        };
     }
 
     /** A path in a tree of files: relative, {@code /}-separated, at most 512 bytes, no empty, {@code .} or {@code ..} segment, no backslash or control character. */

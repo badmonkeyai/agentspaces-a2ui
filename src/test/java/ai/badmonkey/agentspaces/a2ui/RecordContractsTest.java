@@ -82,10 +82,18 @@ class RecordContractsTest {
                 of(StaticBundle.class, Map.of("files", List.of(new StaticFile("index.html", new byte[1]))), "files", R),
                 of(StaticFile.class, Map.of("path", "index.html"), "path", R, "bytes", R),
                 // spiral 6 S6-U-17: the open records; a v1 value keeps its v2 fields null, a v2 one takes their defaults
-                of(ChatMessage.class, nullable("format", null, "cites", null), "id", R, "key", R, "from", new ChatMessage.From("person", "", ""), "text", "", "attachments", List.of(),
-                        "inReplyTo", "", "at", T, "format", T, "cites", T),
-                of(ChatMessage.class, Map.of("schemaVersion", 2, "format", ChatMessage.PLAIN), "id", R, "key", R, "from", new ChatMessage.From("person", "", ""), "text", "",
-                        "attachments", List.of(), "inReplyTo", "", "at", T, "format", ChatMessage.PLAIN, "cites", List.of()),
+                of(ChatMessage.class, nullable("format", null, "cites", null, "confirm", null, "answer", null), "id", R, "key", R, "from", new ChatMessage.From("person", "", ""), "text", "", "attachments", List.of(),
+                        "inReplyTo", "", "at", T, "format", T, "cites", T, "confirm", T, "answer", T),
+                of(ChatMessage.class, nullable("schemaVersion", 2, "format", ChatMessage.PLAIN, "confirm", null, "answer", null), "id", R, "key", R, "from", new ChatMessage.From("person", "", ""), "text", "",
+                        "attachments", List.of(), "inReplyTo", "", "at", T, "format", ChatMessage.PLAIN, "cites", List.of(), "confirm", T, "answer", T),
+                // srad/cards.md §8.7 slice 6.4: version 3, a desk's request or a person's answer, either absent
+                of(ChatMessage.class, nullable("schemaVersion", 3, "format", ChatMessage.PLAIN, "confirm", confirm(), "answer", null), "id", R, "key", R,
+                        "from", new ChatMessage.From("person", "", ""), "text", "", "attachments", List.of(), "inReplyTo", "", "at", T, "format", ChatMessage.PLAIN,
+                        "cites", List.of(), "confirm", T, "answer", T),
+                of(ChatMessage.Confirm.class, Map.of("kind", "approval", "reasons", "optional", "state", "pending", "verdict", ""), "invocationId", R, "desk", "",
+                        "kind", "approval", "question", R, "action", "", "arguments", "{}", "summary", "", "deadline", T, "options", List.of("approve", "reject"),
+                        "reasons", "optional", "code", "", "state", "pending", "verdict", "", "by", List.of(), "reason", ""),
+                of(ChatMessage.Answer.class, Map.of("verdict", "approve", "amendedArguments", ""), "invocationId", R, "verdict", R, "reason", "", "amendedArguments", ""),
                 of(ChatMessage.From.class, Map.of("kind", "agent"), "kind", "person", "name", "", "peer", ""),
                 of(ChatMessage.Cite.class, Map.of(), "file", R, "path", "", "name", ""),
                 of(SharedFile.class, nullable("path", null, "replaces", null), "id", R, "name", R, "mediaType", "application/octet-stream", "root", "", "sha256", "", "by", "",
@@ -151,6 +159,10 @@ class RecordContractsTest {
                 assertThat(got).as(at + ": the default").isEqualTo(policy);
             }
         }
+    }
+
+    private static ChatMessage.Confirm confirm() {
+        return new ChatMessage.Confirm("inv-1", "#desk", "approval", "Go?", "a#b", "{}", "", null, null, null, "", "pending", "", null, "", 0, 1);
     }
 
     /** Samples that may hold a null (a version 1 value's version 2 fields). */
